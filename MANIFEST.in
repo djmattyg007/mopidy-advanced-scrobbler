@@ -1,0 +1,10 @@
+include *.py
+include *.rst
+include LICENSE
+include MANIFEST.in
+include pyproject.toml
+
+include mopidy_better_scrobbler/ext.conf
+
+recursive-include mopidy_better_scrobbler/sql *.sql
+recursive-include mopidy_better_scrobbler/static *

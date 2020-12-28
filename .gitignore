@@ -1,0 +1,12 @@
+/bin/
+/build/
+/dist/
+/etc/
+/include/
+/lib/
+/lib64
+/share/
+
+/pyvenv.cfg
+*.egg-info
+*.pyc
