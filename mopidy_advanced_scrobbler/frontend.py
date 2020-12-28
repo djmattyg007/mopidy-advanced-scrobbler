@@ -33,6 +33,7 @@ class RecorderFrontend(pykka.ThreadingActor, CoreListener):
 
     def _connect(self):
         if not self._connection:
+            logger.debug("Connecting to sqlite database at %s", self._dbpath)
             self._connection = sqlite3.connect(
                 self._dbpath,
                 timeout=self.config["db_timeout"],

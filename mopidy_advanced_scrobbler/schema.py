@@ -21,10 +21,10 @@ def prepare(conn: Connection):
     user_version = conn.execute("PRAGMA user_version").fetchone()[0]
     while user_version != schema_version:
         if user_version:
-            logger.info("Upgrading SQLite database schema v%s", user_version)
-            filename = f"upgrade-v{user_version}"
+            logger.info("Upgrading Advanced-Scrobbler SQLite database schema v%s", user_version)
+            filename = f"upgrade-v{user_version}.sql"
         else:
-            logger.info("Creating SQLite database schema v%s", schema_version)
+            logger.info("Creating Advanced-Scrobbler SQLite database schema v%s", schema_version)
             filename = "schema.sql"
 
         with open(sql_dir / filename) as fh:

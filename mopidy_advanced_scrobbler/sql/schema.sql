@@ -12,13 +12,13 @@ CREATE TABLE plays (
     duration INTEGER NOT NULL,
     played_at INTEGER NOT NULL,
     submitted_at INTEGER DEFAULT NULL
-)
+);
 
 CREATE TABLE corrections (
     track_uri TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     artist TEXT NOT NULL,
     album TEXT NOT NULL
-)
+);
 
 END TRANSACTION;
