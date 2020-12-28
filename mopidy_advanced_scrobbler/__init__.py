@@ -8,12 +8,12 @@ from mopidy.http.handlers import StaticFileHandler
 from .schema import Connection
 
 
-__version__ = pkg_resources.get_distribution("Mopidy-Better-Scrobbler").version
+__version__ = pkg_resources.get_distribution("Mopidy-Advanced-Scrobbler").version
 
 
 class Extension(ext.Extension):
-    dist_name = "Mopidy-Better-Scrobbler"
-    ext_name = "better_scrobbler"
+    dist_name = "Mopidy-Advanced-Scrobbler"
+    ext_name = "advanced_scrobbler"
     version = __version__
 
     def get_default_config(self):
