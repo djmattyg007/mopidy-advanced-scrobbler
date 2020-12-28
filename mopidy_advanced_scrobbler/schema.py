@@ -6,7 +6,7 @@ import sqlite3
 logger = logging.getLogger(__name__)
 
 
-schema_version = 7
+schema_version = 1
 
 
 class Connection(sqlite3.Connection):
