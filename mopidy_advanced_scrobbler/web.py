@@ -6,7 +6,7 @@ class IndexHandler(tornado.web.RequestHandler):
         self.config = config
         self.path = path
 
-    def get(self, path):
+    def get(self):
         return self.render("index.html", title="Advanced Scrobbler")
 
     def get_template_path(self):

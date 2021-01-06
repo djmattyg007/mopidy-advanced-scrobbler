@@ -1,6 +1,10 @@
 import logging
 import pathlib
 import sqlite3
+from typing import Optional
+
+
+from mopidy_advanced_scrobbler.models import Correction, Play
 
 
 logger = logging.getLogger(__name__)
@@ -33,3 +37,37 @@ def prepare(conn: Connection):
         new_version = conn.execute("PRAGMA user_version").fetchone()[0]
         assert new_version != user_version
         user_version = new_version
+
+
+def find_correction(conn: Connection, track_uri: str) -> Optional[Correction]:
+    query = "SELECT * FROM corrections WHERE track_uri = ?"
+    logger.debug("Executing DB query: %s", query)
+    cursor = conn.execute(query, (track_uri,))
+    result = cursor.fetchone()
+    if result:
+        return Correction(**result)
+    else:
+        return None
+
+
+def record_play(conn: Connection, play: Play):
+    query = """
+        INSERT INTO plays (
+            track_uri, artist, title, album, corrected, musicbrainz_id, duration, played_at
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?
+        )
+    """
+    logger.debug("Executing DB query: %s", query)
+    args = (
+        play.track_uri,
+        play.artist,
+        play.title,
+        play.album,
+        play.corrected.value,
+        play.musicbrainz_id,
+        play.duration,
+        play.played_at,
+    )
+    with conn:
+        conn.execute(query, args)

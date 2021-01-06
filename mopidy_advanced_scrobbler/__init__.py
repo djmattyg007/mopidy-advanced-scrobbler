@@ -5,6 +5,7 @@ import pkg_resources
 from mopidy import config, ext
 from mopidy.http.handlers import StaticFileHandler
 
+from ._config import Float as ConfigFloat
 from .schema import Connection
 
 
@@ -29,12 +30,14 @@ class Extension(ext.Extension):
 
         schema["db_timeout"] = config.Integer(optional=True, minimum=1)
 
+        schema["scrobble_time_threshold"] = ConfigFloat(optional=True, minimum=50, maximum=100)
+
         return schema
 
     def setup(self, registry):
-        from .frontend import RecorderFrontend
+        from .frontend import AdvancedScrobblerFrontend
 
-        registry.add("frontend", RecorderFrontend)
+        registry.add("frontend", AdvancedScrobblerFrontend)
 
         registry.add("http:app", {"name": self.ext_name, "factory": self.factory_webapp})
 
