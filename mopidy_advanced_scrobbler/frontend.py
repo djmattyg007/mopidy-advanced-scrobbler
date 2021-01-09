@@ -1,17 +1,24 @@
-import json
+from __future__ import annotations
+
 import logging
 import sqlite3
 import time
-from typing import Optional, TypedDict
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 import pykka
 import pylast
 
 from mopidy.core import CoreListener
-from mopidy.models import Track
+
 
 from mopidy_advanced_scrobbler import Extension, schema
 from mopidy_advanced_scrobbler.models import Correction, prepare_play
+
+
+if TYPE_CHECKING:
+    from typing import Optional, TypedDict
+    from mopidy.models import TlTrack, Track
 
 
 logger = logging.getLogger(__name__)
@@ -100,6 +107,15 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         self._proxy = self.actor_ref.proxy()
         self._now_playing_notify_debouncer = None
 
+    def is_uri_allowed(self, uri: str) -> bool:
+        parsed_uri = urlparse(uri)
+        if not parsed_uri.scheme:
+            return False
+        elif parsed_uri.scheme in self.config["ignored_uri_schemes"]:
+            return False
+
+        return True
+
     def _connect(self):
         if not self._connection:
             logger.info("Connecting to Advanced-Scrobbler sqlite database at %s", self._dbpath)
@@ -131,9 +147,13 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             logger.exception(f"Error during Advanced-Scrobbler Last.fm setup: {e}")
             raise
 
-    def track_playback_started(self, tl_track):
+    def on_stop(self):
+        if self._now_playing_notify_debouncer:
+            self._now_playing_notify_debouncer.actor_ref.stop(block=True)
+
+    def track_playback_started(self, tl_track: TlTrack):
         track = tl_track.track
-        if not track.uri:
+        if not self.is_uri_allowed(track.uri):
             return
 
         logger.debug("Advanced-Scrobbler track playback started: %s", track.uri)
@@ -143,9 +163,9 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
         self._now_playing_notify_debouncer = DebounceActor.start(track.uri, self._proxy.debounced_now_playing_notify, 5, track).proxy()
 
-    def track_playback_ended(self, tl_track, time_position):
+    def track_playback_ended(self, tl_track: TlTrack, time_position):
         track = tl_track.track
-        if not track.uri:
+        if not self.is_uri_allowed(track.uri):
             return
 
         time_position_sec = time_position / 1000

@@ -32,6 +32,8 @@ class Extension(ext.Extension):
 
         schema["scrobble_time_threshold"] = ConfigFloat(optional=True, minimum=50, maximum=100)
 
+        schema["ignored_uri_schemes"] = config.List()
+
         return schema
 
     def setup(self, registry):
@@ -43,11 +45,9 @@ class Extension(ext.Extension):
 
     def factory_webapp(self, config, core):
         from tornado.web import RedirectHandler
-        from .web import IndexHandler
 
         path_static = pathlib.Path(__file__).parent / "static"
         return [
             (r"/", RedirectHandler, {"url": "index.html"}),
-            (r"/index\.html$", IndexHandler, {"config": config, "path": path_static}),
-            (r"/(.*)", StaticFileHandler, {"path": path_static})
+            (r"/(.*)", StaticFileHandler, {"path": path_static}),
         ]
