@@ -1,13 +1,8 @@
-/bin/
 /build/
 /dist/
-/etc/
-/include/
-/lib/
-/lib64
-/share/
-
-/pyvenv.cfg
+/venv/
 *.egg-info
 *.pyc
 *.pyo
+
+/mopidy_advanced_scrobbler/static/

@@ -1,45 +1,30 @@
 from __future__ import annotations
 
 import logging
-import sqlite3
+import pykka
 import time
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
-import pykka
-import pylast
-
 from mopidy.core import CoreListener
 
 
-from mopidy_advanced_scrobbler import Extension, schema
+from mopidy_advanced_scrobbler import Extension
 from mopidy_advanced_scrobbler.models import Correction, prepare_play
+from mopidy_advanced_scrobbler.db import db_service
+from mopidy_advanced_scrobbler.network import NowPlayingData, network_service
+from ._service import ActorRetrievalFailure
 
 
 if TYPE_CHECKING:
-    from typing import Optional, TypedDict
     from mopidy.models import TlTrack, Track
+    from typing import Optional
 
 
 logger = logging.getLogger(__name__)
 
 
-PYLAST_ERRORS = (
-    pylast.MalformedResponseError,
-    pylast.NetworkError,
-    pylast.WSError,
-)
-
-
-class NowPlayingData(TypedDict):
-    artist: str
-    title: str
-    album: Optional[str]
-    mbid: Optional[str]
-    duration: Optional[int]
-
-
-def prepare_now_playing_data(track: Track, correction: Correction) -> NowPlayingData:
+def prepare_now_playing_data(track: Track, correction: Optional[Correction]) -> NowPlayingData:
     if correction:
         artist = correction.artist
         title = correction.title
@@ -90,7 +75,7 @@ class DebounceActor(pykka.ThreadingActor):
 
     def finish_timer(self):
         logger.debug("Successful debounce for ID %s", self.debounce_id)
-        self._wrapped(*self.args, **self.kwargs)
+        self._wrapped.defer(*self.args, **self.kwargs)
         self.stop()
 
 
@@ -98,11 +83,9 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
     def __init__(self, config, core):
         super().__init__()
         self.config = config["advanced_scrobbler"]
-        self.lastfm = None
+        self._global_config = config
 
         self._data_dir = Extension.get_data_dir(config)
-        self._dbpath = self._data_dir / "advanced_scrobbler.db"
-        self._connection = None
 
         self._proxy = self.actor_ref.proxy()
         self._now_playing_notify_debouncer = None
@@ -116,40 +99,21 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
         return True
 
-    def _connect(self):
-        if not self._connection:
-            logger.info("Connecting to Advanced-Scrobbler sqlite database at %s", self._dbpath)
-            self._connection = sqlite3.connect(
-                self._dbpath,
-                timeout=self.config["db_timeout"],
-                check_same_thread=False,
-                factory=schema.Connection,
-            )
-        return self._connection
-
     def on_start(self):
-        try:
-            with self._connect() as connection:
-                schema.prepare(connection)
-        except Exception as e:
-            logger.exception(f"Error during Advanced-Scrobbler database preparation: {e}")
-            raise
+        db_service.start_service(self._global_config)
 
-        try:
-            self.lastfm = pylast.LastFMNetwork(
-                api_key=self.config["api_key"],
-                api_secret=self.config["api_secret"],
-                username=self.config["username"],
-                password_hash=pylast.md5(self.config["password"]),
-            )
-            logger.info("Advanced-Scrobbler connected to Last.fm")
-        except PYLAST_ERRORS as e:
-            logger.exception(f"Error during Advanced-Scrobbler Last.fm setup: {e}")
-            raise
+        network_service.start_service(self.config)
 
     def on_stop(self):
         if self._now_playing_notify_debouncer:
-            self._now_playing_notify_debouncer.actor_ref.stop(block=True)
+            debouncer_stop_future = self._now_playing_notify_debouncer.actor_ref.stop(block=False)
+        else:
+            debouncer_stop_future = None
+
+        network_service.stop_service()
+        db_service.stop_service()
+        if debouncer_stop_future:
+            debouncer_stop_future.get()
 
     def track_playback_started(self, tl_track: TlTrack):
         track = tl_track.track
@@ -163,6 +127,30 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
         self._now_playing_notify_debouncer = DebounceActor.start(track.uri, self._proxy.debounced_now_playing_notify, 5, track).proxy()
 
+    def debounced_now_playing_notify(self, track: Track):
+        self._now_playing_notify_debouncer = None
+        logger.info("Advanced-Scrobbler submitting now playing notification: %s", track.uri)
+
+        try:
+            db = db_service.retrieve_service().get(timeout=10)
+            correction = db.find_correction(track.uri).get(timeout=10)
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Database connection found to be unavailable: {exc}")
+            correction = None
+            db_service.request_service_restart(self._global_config)
+        except Exception as exc:
+            logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}")
+            correction = None
+
+        now_playing_data = prepare_now_playing_data(track, correction)
+
+        try:
+            network = network_service.retrieve_service().get(timeout=10)
+            network.update_now_playing(**now_playing_data)
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Network service found to be unavailable: {exc}")
+            network_service.request_service_restart(self.config)
+
     def track_playback_ended(self, tl_track: TlTrack, time_position):
         track = tl_track.track
         if not self.is_uri_allowed(track.uri):
@@ -171,13 +159,21 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         time_position_sec = time_position / 1000
         logger.debug("Advanced-Scrobbler track playback ended after %s: %s", int(time_position_sec), track.uri)
 
+        db = None
+        db_restart_future = None
+
         try:
-            correction = schema.find_correction(self._connect(), track.uri)
-        except Exception as e:
-            logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {e}")
+            db = db_service.retrieve_service().get(timeout=10)
+            correction = db.find_correction(track.uri).get(timeout=10)
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Database connection found to be unavailable: {exc}")
+            correction = None
+            db_restart_future = db_service.request_service_restart(self._global_config)
+        except Exception as exc:
+            logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}")
             correction = None
 
-        play = prepare_play(track, correction, int(time.time() - time_position_sec))
+        play = prepare_play(track, int(time.time() - time_position_sec), correction)
         if play.duration < 30:
             logger.debug("Advanced-Scrobbler track to short to scrobble (%d secs): %s", time_position_sec, track.uri)
             return
@@ -192,24 +188,13 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             return
 
         try:
-            schema.record_play(self._connect(), play)
+            if db_restart_future:
+                db_restart_future.get(timeout=10)
+                db = db_service.retrieve_service().get(timeout=10)
+
+            db.record_play(play)
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Database connection found to be unavailable: {exc}")
         except Exception as e:
             logger.exception(f"Error while recording play for track with URI '{track.uri}: {e}")
             raise
-
-    def debounced_now_playing_notify(self, track: Track):
-        self._now_playing_notify_debouncer = None
-        logger.info("Advanced-Scrobbler submitting now playing notification: %s", track.uri)
-
-        try:
-            correction = schema.find_correction(self._connect(), track.uri)
-        except Exception as e:
-            logger.exception(f"Error while finding correction for track with URI '{track.uri}': {e}")
-            correction = None
-
-        now_playing_data = prepare_now_playing_data(track, correction)
-
-        try:
-            self.lastfm.update_now_playing(**now_playing_data)
-        except PYLAST_ERRORS as e:
-            logger.exception(f"Error while submitting now playing data to Last.fm: {e}")

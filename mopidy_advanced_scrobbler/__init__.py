@@ -3,10 +3,8 @@ import pathlib
 import pkg_resources
 
 from mopidy import config, ext
-from mopidy.http.handlers import StaticFileHandler
 
 from ._config import Float as ConfigFloat
-from .schema import Connection
 
 
 __version__ = pkg_resources.get_distribution("Mopidy-Advanced-Scrobbler").version
@@ -32,7 +30,7 @@ class Extension(ext.Extension):
 
         schema["scrobble_time_threshold"] = ConfigFloat(optional=True, minimum=50, maximum=100)
 
-        schema["ignored_uri_schemes"] = config.List()
+        schema["ignored_uri_schemes"] = config.List(optional=True)
 
         return schema
 
@@ -44,10 +42,25 @@ class Extension(ext.Extension):
         registry.add("http:app", {"name": self.ext_name, "factory": self.factory_webapp})
 
     def factory_webapp(self, config, core):
-        from tornado.web import RedirectHandler
+        from .web import OverrideStaticFileHandler, StaticFileHandler
+        from .web import ApiLoadPlays, ApiLoadCorrections
+
+        allowed_origins = {
+            origin.lower() for origin in config["http"]["allowed_origins"] if origin
+        }
 
         path_static = pathlib.Path(__file__).parent / "static"
+        path_page_file = path_static / "index.html"
+
+        api_args = {"allowed_origins": allowed_origins, "csrf_protection": config["http"]["csrf_protection"]}
+        vue_router_args = {"static_file_path": path_page_file}
+
         return [
-            (r"/", RedirectHandler, {"url": "index.html"}),
-            (r"/(.*)", StaticFileHandler, {"path": path_static}),
+            (r"/css/(.*)", StaticFileHandler, {"path": str(path_static / "css")}),
+            (r"/js/(.*)", StaticFileHandler, {"path": str(path_static / "js")}),
+            (r"/api/plays/load", ApiLoadPlays, api_args),
+            (r"/api/corrections/load", ApiLoadCorrections, api_args),
+            (r"/favicon\.ico$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.ico"}),
+            (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
+            (r"/", OverrideStaticFileHandler, vue_router_args),
         ]

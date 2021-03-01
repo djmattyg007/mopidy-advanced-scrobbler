@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import dataclasses
 from enum import IntEnum
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from mopidy.models import Track
+
+if TYPE_CHECKING:
+    from typing import Optional
 
 
 class Corrected(IntEnum):
@@ -37,7 +42,7 @@ class Correction(object):
     album: str
 
 
-def prepare_play(track: Track, correction: Correction, played_at: int) -> Play:
+def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
     if correction:
         artist = correction.artist
         title = correction.title
