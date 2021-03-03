@@ -28,7 +28,8 @@ class Service(object):
         def run_restart():
             instance = self._instance
             self._instance = None
-            instance.actor_ref.stop(block=False)
+            if instance:
+                instance.actor_ref.stop(block=False)
 
             self.start_service(*args, **kwargs)
 

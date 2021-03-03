@@ -57,6 +57,7 @@ class Extension(ext.Extension):
 
         return [
             (r"/css/(.*)", StaticFileHandler, {"path": str(path_static / "css")}),
+            (r"/fonts/(.*)", StaticFileHandler, {"path": str(path_static / "fonts")}),
             (r"/js/(.*)", StaticFileHandler, {"path": str(path_static / "js")}),
             (r"/api/plays/load", ApiLoadPlays, api_args),
             (r"/api/corrections/load", ApiLoadCorrections, api_args),

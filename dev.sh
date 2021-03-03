@@ -5,9 +5,13 @@ set -x
 
 cd "$(dirname -- "$0")"
 
-pushd frontend
-yarn run build
-popd
+SKIP_FRONTEND="${SKIP_FRONTEND:-}"
+
+if [[ -z "${SKIP_FRONTEND}" ]]; then
+    pushd frontend
+    yarn run build
+    popd
+fi
 
 rm -rf mopidy_advanced_scrobbler/static
 cp -r frontend/dist mopidy_advanced_scrobbler/static

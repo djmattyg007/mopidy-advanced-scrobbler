@@ -146,7 +146,7 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
         try:
             network = network_service.retrieve_service().get(timeout=10)
-            network.update_now_playing(**now_playing_data)
+            network.send_now_playing_notification(**now_playing_data)
         except ActorRetrievalFailure as exc:
             logger.exception(f"Network service found to be unavailable: {exc}")
             network_service.request_service_restart(self.config)

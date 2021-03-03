@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import dataclasses
+from dataclasses_json import dataclass_json, LetterCase
 from enum import IntEnum
-from typing import TYPE_CHECKING
+from typing import Optional
 
 from mopidy.models import Track
 
-if TYPE_CHECKING:
-    from typing import Optional
 
-
+# TODO: Add "not corrected but verified" status
 class Corrected(IntEnum):
     NOT_CORRECTED = 0
     MANUALLY_CORRECTED = 1
     AUTO_CORRECTED = 2
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class Play(object):
     track_uri: str
@@ -24,16 +24,18 @@ class Play(object):
     album: str
     corrected: Corrected
     musicbrainz_id: Optional[str]
-    duration: int
-    played_at: int
-    submitted_at: Optional[int]
+    duration: int  # Number of seconds
+    played_at: int  # UNIX timestamp
+    submitted_at: Optional[int]  # UNIX timestamp
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class RecordedPlay(Play):
     play_id: int
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class Correction(object):
     track_uri: str
@@ -42,13 +44,25 @@ class Correction(object):
     album: str
 
 
+play_schema = Play.schema()
+recorded_play_schema = RecordedPlay.schema()
+correction_schema = Correction.schema()
+
+
 def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
     if correction:
         artist = correction.artist
         title = correction.title
         corrected = Corrected.MANUALLY_CORRECTED
     else:
-        artist = ", ".join(sorted([artist.name for artist in track.artists]))
+        artist_names = []
+        for artist in track.artists:
+            if artist.name:
+                artist_name = artist.name.strip()
+                if artist_name:
+                    artist_names.append(artist_name)
+
+        artist = ", ".join(sorted(artist_names))
         title = track.name or ""
         corrected = Corrected.NOT_CORRECTED
 

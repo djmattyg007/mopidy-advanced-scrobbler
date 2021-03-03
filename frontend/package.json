@@ -8,16 +8,18 @@
     "lint": "vue-cli-service lint --no-fix"
   },
   "dependencies": {
+    "@mdi/font": "^5.9.55",
+    "axios": "^0.21.1",
     "core-js": "^3.9.1",
-    "primeflex": "^2.0.0",
-    "primeicons": "^4.1.0",
-    "primevue": "^2.3.0",
+    "luxon": "^1.26.0",
     "vue": "^3.0.6",
+    "vue-promised": "^2.0.3",
     "vue-router": "^4.0.4",
     "vuex": "^4.0.0",
     "wave-ui": "^2.13.0"
   },
   "devDependencies": {
+    "@types/luxon": "^1.26.1",
     "@typescript-eslint/eslint-plugin": "^4.15.2",
     "@typescript-eslint/parser": "^4.15.2",
     "@vue/cli-plugin-babel": "~4.5.11",

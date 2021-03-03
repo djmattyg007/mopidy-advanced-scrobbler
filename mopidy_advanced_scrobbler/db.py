@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum
 import logging
 from pathlib import Path
 import pykka
@@ -9,19 +10,32 @@ from typing import TYPE_CHECKING
 from ._service import Service
 
 if TYPE_CHECKING:
-    from typing import Collection, Optional
+    from typing import Collection, List, Optional
 
 
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import Correction, Play
+from mopidy_advanced_scrobbler.models import Correction, Play, RecordedPlay
 
 
 logger = logging.getLogger(__name__)
 
 
+class SortDirectionEnum(Enum):
+    SORT_ASC = "asc"
+    SORT_DESC = "desc"
+
+
+def dict_row_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
 class Connection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.row_factory = dict_row_factory
         self.execute("PRAGMA foreign_keys = ON")
 
 
@@ -64,7 +78,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         conn = self._connect()
         schema_version = AdvancedScrobblerDb.schema_version
 
-        user_version = conn.execute("PRAGMA user_version").fetchone()[0]
+        user_version = conn.execute("PRAGMA user_version").fetchone()["user_version"]
         while user_version != schema_version:
             if user_version:
                 logger.info("Upgrading Advanced-Scrobbler SQLite database schema v%s", user_version)
@@ -76,36 +90,44 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             with open(self._sqlpath / filename) as fh:
                 conn.executescript(fh.read())
 
-            new_version = conn.execute("PRAGMA user_version").fetchone()[0]
+            new_version = conn.execute("PRAGMA user_version").fetchone()["user_version"]
             assert new_version != user_version
             user_version = new_version
             logger.info("Successfully upgraded Advanced-Scrobbler SQLite database schema to v%s", user_version)
 
-    def find_play(self, track_uri: str) -> Optional[Play]:
+    def find_play(self, play_id: int) -> Optional[RecordedPlay]:
         conn = self._connect()
 
-        query = "SELECT * FROM plays WHERE track_uri = ?"
+        query = "SELECT * FROM plays WHERE play_id = ?"
         logger.debug("Executing DB query: %s", query)
-        cursor = conn.execute(query, (track_uri,))
+        cursor = conn.execute(query, (play_id,))
         result = cursor.fetchone()
 
         if result:
-            return Play(**result)
+            return RecordedPlay.from_dict(result)
         else:
             return None
 
-    def load_plays(self, page_num: int = 1, page_size: int = 50) -> Collection[Play]:
+    def load_plays(
+            self,
+            *,
+            sort_direction: SortDirectionEnum = SortDirectionEnum.SORT_DESC,
+            page_num: int = 1,
+            page_size: int = 50,
+    ) -> Collection[RecordedPlay]:
         conn = self._connect()
 
+        order = sort_direction.value
         limit = int(page_size)
         offset = (int(page_num) - 1) * limit
-        query = f"SELECT * FROM plays LIMIT {limit} OFFSET {offset}"
+
+        query = f"SELECT * FROM plays ORDER BY play_id {order} LIMIT {limit} OFFSET {offset}"
         logger.debug("Executing DB query: %s", query)
         cursor = conn.execute(query)
 
-        plays = []
+        plays: List[RecordedPlay] = []
         for row in cursor:
-            plays.append(Play(**row))
+            plays.append(RecordedPlay.from_dict(row))
 
         return tuple(plays)
 
@@ -141,22 +163,23 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         result = cursor.fetchone()
 
         if result:
-            return Correction(**result)
+            return Correction.from_dict(result)
         else:
             return None
 
-    def load_corrections(self, page_num: int = 1, page_size: int = 50) -> Collection[Correction]:
+    def load_corrections(self, *, page_num: int = 1, page_size: int = 50) -> Collection[Correction]:
         conn = self._connect()
 
         limit = int(page_size)
         offset = (int(page_num) - 1) * limit
+
         query = f"SELECT * FROM corrections LIMIT {limit} OFFSET {offset}"
         logger.debug("Executing DB query: %s", query)
         cursor = conn.execute(query)
 
-        corrections = []
+        corrections: List[Correction] = []
         for row in cursor:
-            corrections.append(Correction(**row))
+            corrections.append(Correction.from_dict(row))
 
         return tuple(corrections)
 

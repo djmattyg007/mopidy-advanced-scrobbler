@@ -6,7 +6,8 @@ import tornado.escape
 import tornado.web
 from typing import TYPE_CHECKING
 
-from mopidy_advanced_scrobbler.db import db_service
+from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum
+from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
 from ._service import ActorRetrievalFailure
 
 if TYPE_CHECKING:
@@ -91,6 +92,12 @@ class ApiLoadPlays(_BaseJsonHandler):
         load_args = {}
 
         try:
+            sort_direction = SortDirectionEnum(self.get_query_argument("sort", ""))
+            load_args["sort_direction"] = sort_direction
+        except ValueError:
+            pass
+
+        try:
             page_num = int(self.get_query_argument("page", ""))
             load_args["page_num"] = max(page_num, 1)
         except ValueError:
@@ -116,7 +123,7 @@ class ApiLoadPlays(_BaseJsonHandler):
             self.set_status(500, "Database connection issue.")
             return
 
-        response = {"plays": plays}
+        response = {"plays": recorded_play_schema.dump(plays, many=True)}
         self.write(response)
 
 
@@ -151,5 +158,5 @@ class ApiLoadCorrections(_BaseJsonHandler):
             self.set_status(500, "Database connection issue.")
             return
 
-        response = {"corrections": corrections}
+        response = {"corrections": correction_schema.dump(corrections, many=True)}
         self.write(response)
