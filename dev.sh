@@ -9,7 +9,7 @@ SKIP_FRONTEND="${SKIP_FRONTEND:-}"
 
 if [[ -z "${SKIP_FRONTEND}" ]]; then
     pushd frontend
-    yarn run build
+    yarn run build --mode development
     popd
 fi
 

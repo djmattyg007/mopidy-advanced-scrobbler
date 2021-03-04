@@ -93,4 +93,4 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
     data["played_at"] = played_at
     data["submitted_at"] = None
 
-    return Play(**data)
+    return Play.from_dict(data)

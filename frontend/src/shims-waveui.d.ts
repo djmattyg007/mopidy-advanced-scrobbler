@@ -38,6 +38,13 @@ declare module "wave-ui" {
     instance: WaveUI;
   }*/
 
+  export interface TableHeader {
+    label: string;
+    key: string;
+    sortable?: boolean;
+    align?: string;
+  }
+
   export default class WaveUI {
     constructor(app: App, config?: WaveUIConfigParam);
     static install(app: App): void;

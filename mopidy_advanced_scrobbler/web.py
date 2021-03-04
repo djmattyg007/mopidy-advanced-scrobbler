@@ -67,6 +67,9 @@ class _BaseJsonHandler(_BaseHandler):
         self.set_header("Accept", "application/json")
         self.set_header("Content-Type", "application/json; utf-8")
 
+    def compute_etag(self):
+        return None
+
 
 class _BaseJsonPostHandler(_BaseJsonHandler):
     def post(self):
