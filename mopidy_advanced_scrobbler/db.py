@@ -113,11 +113,11 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             return None
 
     def load_plays(
-            self,
-            *,
-            sort_direction: SortDirectionEnum = SortDirectionEnum.SORT_DESC,
-            page_num: int = 1,
-            page_size: int = 50,
+        self,
+        *,
+        sort_direction: SortDirectionEnum = SortDirectionEnum.SORT_DESC,
+        page_num: int = 1,
+        page_size: int = 50,
     ) -> Collection[RecordedPlay]:
         conn = self._connect()
 
@@ -190,12 +190,12 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 )
 
     def delete_play(self, play_id: int):
-        conn = self._connect()
-
         delete_query = "DELETE FROM plays WHERE play_id = ?"
         logger.debug("Executing DB query: %s", delete_query)
-        cursor = conn.execute(delete_query, (play_id,))
-        return cursor.rowcount == 1
+
+        with self._connect() as conn:
+            cursor = conn.execute(delete_query, (play_id,))
+            return cursor.rowcount == 1
 
     def find_correction(self, track_uri: str) -> Optional[Correction]:
         conn = self._connect()

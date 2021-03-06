@@ -195,9 +195,6 @@ class ApiPlayDelete(_BaseJsonPostHandler):
             self.set_status(500, "Database connection issue.")
             return
 
-        import time
-        time.sleep(5)
-
         try:
             success = db.delete_play(play_id).get()
         except ActorRetrievalFailure as exc:
