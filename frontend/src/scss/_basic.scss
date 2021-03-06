@@ -1,0 +1,16 @@
+.menu-list {
+  list-style: none;
+
+  li {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
+
+  li:first-of-type {
+    margin-top: 0;
+  }
+
+  li:last-of-type {
+    margin-bottom: 0;
+  }
+}

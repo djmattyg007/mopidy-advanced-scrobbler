@@ -69,13 +69,22 @@
           >
             <template #item="{ item, label, header }">
               <template v-if="header.key === 'actions'">
-                <w-button class="ml1" bg-color="secondary" lg>Edit</w-button>
-                <w-menu bottom align-right>
+                <w-button class="ml1" bg-color="secondary" lg @click="editPlay(item)"
+                  >Edit</w-button
+                >
+                <w-menu bottom align-right hide-on-menu-click>
                   <template #activator="{ on }">
                     <w-button class="ml1" v-on="on" bg-color="secondary" lg>Menu</w-button>
                   </template>
 
-                  <w-button lg>Submit</w-button>
+                  <ul class="menu-list">
+                    <li>
+                      <w-button text lg>Submit</w-button>
+                    </li>
+                    <li>
+                      <w-button text lg @click="deletePlay(item)">Delete</w-button>
+                    </li>
+                  </ul>
                 </w-menu>
               </template>
               <template v-else-if="header.key === 'corrected'">
@@ -97,6 +106,131 @@
         </w-card>
       </template>
     </Promised>
+
+    <w-dialog
+      v-model="dialogEditShow"
+      title-class="primary-light1--bg white"
+      width="400px"
+      :persistent="editFormSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-pencil</w-icon>
+        Edit Play
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="editFormSubmitting"
+          @click="closeEditDialog"
+        ></w-button>
+      </template>
+
+      <w-form
+        v-if="playEdit"
+        v-model="editFormValid"
+        id="editForm"
+        no-keyup-validation
+        @submit="submitEditForm"
+      >
+        <w-input
+          v-model.trim="playEdit.title"
+          class="d-flex mb4"
+          label="Title"
+          :readonly="editFormSubmitting"
+          :validators="[validators.required]"
+        />
+
+        <w-input
+          v-model.trim="playEdit.artist"
+          class="d-flex mb4"
+          label="Artist"
+          :readonly="editFormSubmitting"
+          :validators="[validators.required]"
+        />
+
+        <w-input
+          v-model.trim="playEdit.album"
+          class="d-flex mb4"
+          label="Album"
+          :readonly="editFormSubmitting"
+        />
+
+        <w-checkbox
+          class="d-flex mb4"
+          v-model="playEdit.saveCorrection"
+          label="Save as Correction"
+          :disabled="editFormSubmitting"
+        />
+      </w-form>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="warning"
+          lg
+          :disabled="editFormSubmitting"
+          @click="closeEditDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          type="submit"
+          form="editForm"
+          class="ml4"
+          bg-color="success"
+          lg
+          :loading="editFormSubmitting"
+          :disabled="editFormValid === false || editFormSubmitting"
+          >Save</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-dialog
+      v-model="dialogDeleteShow"
+      title-class="error-dark1--bg white"
+      width="300px"
+      :persistent="deleteRequestSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-delete</w-icon>
+        Delete Play
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="deleteRequestSubmitting"
+          @click="closeDeleteDialog"
+        ></w-button>
+      </template>
+
+      <p>Are you sure?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="confirm"
+          lg
+          :disabled="deleteRequestSubmitting"
+          @click="closeDeleteDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="error"
+          lg
+          :loading="deleteRequestSubmitting"
+          :disabled="deleteRequestSubmitting"
+          @click="submitDeleteRequest"
+          >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
   </main>
 </template>
 
@@ -105,7 +239,7 @@ import { defineComponent } from "vue";
 import { Promised } from "vue-promised";
 import type { TableHeader } from "wave-ui";
 
-import type { Play } from "@/types";
+import { Play, Corrected } from "@/types";
 
 import { api } from "@/api";
 
@@ -114,6 +248,15 @@ import UnixTimestamp from "@/components/UnixTimestamp.vue";
 
 interface LoadPlaysResponse {
   readonly plays: ReadonlyArray<Play>;
+}
+
+interface EditablePlay {
+  readonly playId: number;
+  readonly trackUri: string;
+  title: string;
+  artist: string;
+  album: string;
+  saveCorrection: boolean;
 }
 
 export default defineComponent({
@@ -128,6 +271,13 @@ export default defineComponent({
       pageNumber: 1,
       pageSize: 50,
       plays: new Promise<ReadonlyArray<Play>>((resolve) => resolve([])),
+      selectedPlay: null as Play | null,
+      playEdit: null as EditablePlay | null,
+      dialogEditShow: false,
+      dialogDeleteShow: false,
+      editFormValid: null,
+      editFormSubmitting: false,
+      deleteRequestSubmitting: false,
     };
   },
   computed: {
@@ -151,9 +301,42 @@ export default defineComponent({
     isFirstPage(): boolean {
       return this.pageNumber === 1;
     },
+
+    validators(): { [key: string]: (value: unknown) => true | string } {
+      return {
+        required: (value: unknown) => {
+          if (typeof value !== "string") {
+            return "Value is not a string.";
+          }
+
+          if (value.trim().length === 0) {
+            return "Value cannot be empty.";
+          }
+
+          return true;
+        },
+      };
+    },
   },
   created() {
     this.loadPlays();
+  },
+  watch: {
+    dialogEditShow(newVal: boolean): void {
+      if (!newVal) {
+        this.$nextTick(() => {
+          this.selectedPlay = null;
+          this.playEdit = null;
+        });
+      }
+    },
+    dialogDeleteShow(newVal: boolean): void {
+      if (!newVal) {
+        this.$nextTick(() => {
+          this.selectedPlay = null;
+        });
+      }
+    },
   },
   methods: {
     goToNextPage(): void {
@@ -187,6 +370,117 @@ export default defineComponent({
         },
       });
       return response.data.plays;
+    },
+
+    editPlay(play: Play): void {
+      this.selectedPlay = play;
+      this.playEdit = {
+        playId: play.playId,
+        trackUri: play.trackUri,
+        title: play.title,
+        artist: play.artist,
+        album: play.album,
+        saveCorrection: true,
+      };
+      this.dialogEditShow = true;
+    },
+    deletePlay(play: Play): void {
+      this.selectedPlay = play;
+      this.dialogDeleteShow = true;
+    },
+    closeEditDialog(): void {
+      this.dialogEditShow = false;
+    },
+    closeDeleteDialog(): void {
+      this.dialogDeleteShow = false;
+    },
+    async submitEditForm(): Promise<void> {
+      if (this.editFormSubmitting) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("The edit form is already being submitted.");
+        return;
+      } else if (!this.playEdit || !this.selectedPlay) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("No play was open for editing.");
+        return;
+      } else if (this.editFormValid !== true) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("Form is not valid.");
+        return;
+      }
+
+      this.editFormSubmitting = true;
+
+      try {
+        await api.post("/plays/edit", {
+          play: this.playEdit,
+        });
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while saving play";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+        this.editFormSubmitting = false;
+        return;
+      }
+
+      Object.assign(this.selectedPlay, {
+        artist: this.playEdit.artist,
+        title: this.playEdit.title,
+        album: this.playEdit.album,
+        corrected: Corrected.MANUALLY_CORRECTED,
+      });
+      this.dialogEditShow = false;
+      this.$nextTick(() => {
+        this.editFormSubmitting = false;
+      });
+    },
+    async submitDeleteRequest(): Promise<void> {
+      if (this.deleteRequestSubmitting) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("A delete request is already pending.");
+        return;
+      } else if (!this.selectedPlay) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("No play was selected for deletion.");
+        return;
+      }
+
+      this.deleteRequestSubmitting = true;
+      let success = false;
+      try {
+        await api.post("/plays/delete", {
+          playId: this.selectedPlay.playId,
+        });
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while deleting play";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+         // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+      }
+
+      this.dialogDeleteShow = false;
+      this.$nextTick(() => {
+        this.deleteRequestSubmitting = false;
+        if (success === true) {
+          this.loadPlays();
+        }
+      });
     },
   },
 });

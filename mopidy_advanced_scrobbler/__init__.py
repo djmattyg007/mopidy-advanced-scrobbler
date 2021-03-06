@@ -43,7 +43,7 @@ class Extension(ext.Extension):
 
     def factory_webapp(self, config, core):
         from .web import OverrideStaticFileHandler, StaticFileHandler
-        from .web import ApiLoadPlays, ApiLoadCorrections
+        from .web import ApiPlayDelete, ApiPlayEdit, ApiPlayLoad, ApiCorrectionLoad
 
         allowed_origins = {
             origin.lower() for origin in config["http"]["allowed_origins"] if origin
@@ -59,8 +59,10 @@ class Extension(ext.Extension):
             (r"/css/(.*)", StaticFileHandler, {"path": str(path_static / "css")}),
             (r"/fonts/(.*)", StaticFileHandler, {"path": str(path_static / "fonts")}),
             (r"/js/(.*)", StaticFileHandler, {"path": str(path_static / "js")}),
-            (r"/api/plays/load", ApiLoadPlays, api_args),
-            (r"/api/corrections/load", ApiLoadCorrections, api_args),
+            (r"/api/plays/load", ApiPlayLoad, api_args),
+            (r"/api/plays/edit", ApiPlayEdit, api_args),
+            (r"/api/plays/delete", ApiPlayDelete, api_args),
+            (r"/api/corrections/load", ApiCorrectionLoad, api_args),
             (r"/favicon\.ico$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.ico"}),
             (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
             (r"/", OverrideStaticFileHandler, vue_router_args),

@@ -14,10 +14,14 @@ if TYPE_CHECKING:
 
 
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import Correction, Play, RecordedPlay
+from mopidy_advanced_scrobbler.models import Corrected, Correction, Play, RecordedPlay, PlayEdit
 
 
 logger = logging.getLogger(__name__)
+
+
+class DbClientError(Exception):
+    pass
 
 
 class SortDirectionEnum(Enum):
@@ -25,7 +29,7 @@ class SortDirectionEnum(Enum):
     SORT_DESC = "desc"
 
 
-def dict_row_factory(cursor, row):
+def dict_row_factory(cursor: sqlite3.Cursor, row: tuple):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
@@ -153,6 +157,45 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         with self._connect() as conn:
             logger.debug("Executing DB query: %s", query)
             conn.execute(query, args)
+
+    def edit_play(self, play_edit: PlayEdit):
+        conn = self._connect()
+
+        play = self.find_play(play_edit.play_id)
+        if not isinstance(play, RecordedPlay):
+            raise DbClientError(f"No play found with ID '{play_edit.play_id}'.")
+        elif play_edit.track_uri != play.track_uri:
+            raise DbClientError(f"Mismatched track URI for play with ID '{play_edit.play_id}'.")
+
+        with conn:
+            conn.execute("BEGIN")
+
+            play_update_query = "UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ? WHERE play_id = ?"
+            logger.debug("Executing DB query: %s", play_update_query)
+            conn.execute(
+                play_update_query,
+                (play_edit.artist, play_edit.title, play_edit.album, Corrected.MANUALLY_CORRECTED, play.play_id),
+            )
+
+            if play_edit.save_correction:
+                correction_upsert_query = """
+                INSERT INTO corrections (track_uri, artist, title, album) VALUES (?, ?, ?, ?)
+                ON CONFLICT (track_uri) DO
+                UPDATE SET artist = excluded.artist, title = excluded.title, album = excluded.album
+                """
+                logger.debug("Executing DB query: %s", correction_upsert_query)
+                conn.execute(
+                    correction_upsert_query,
+                    (play.track_uri, play_edit.artist, play_edit.title, play_edit.album),
+                )
+
+    def delete_play(self, play_id: int):
+        conn = self._connect()
+
+        delete_query = "DELETE FROM plays WHERE play_id = ?"
+        logger.debug("Executing DB query: %s", delete_query)
+        cursor = conn.execute(delete_query, (play_id,))
+        return cursor.rowcount == 1
 
     def find_correction(self, track_uri: str) -> Optional[Correction]:
         conn = self._connect()

@@ -1,5 +1,6 @@
 declare module "wave-ui" {
   import { App } from "@vue/runtime-core";
+  import { RouteLocationRaw } from "vue-router";
 
   export interface WaveUIConfigParam {
     breakpoints?: {
@@ -43,6 +44,13 @@ declare module "wave-ui" {
     key: string;
     sortable?: boolean;
     align?: string;
+  }
+
+  export interface ListItem {
+    label: string;
+    value: string;
+    color?: string;
+    route?: RouteLocationRaw;
   }
 
   export default class WaveUI {

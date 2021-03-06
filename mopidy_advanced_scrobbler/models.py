@@ -37,6 +37,17 @@ class RecordedPlay(Play):
 
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
+class PlayEdit(object):
+    play_id: int
+    track_uri: str
+    title: str
+    artist: str
+    album: str
+    save_correction: bool
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclasses.dataclass(frozen=True)
 class Correction(object):
     track_uri: str
     artist: str
@@ -46,6 +57,7 @@ class Correction(object):
 
 play_schema = Play.schema()
 recorded_play_schema = RecordedPlay.schema()
+play_edit_schema = PlayEdit.schema()
 correction_schema = Correction.schema()
 
 

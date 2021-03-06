@@ -3,10 +3,12 @@ from __future__ import annotations
 import logging
 from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
 import tornado.escape
+import tornado.httputil
 import tornado.web
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Awaitable
 
-from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum
+from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum, DbClientError
+from mopidy_advanced_scrobbler.models import PlayEdit
 from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
 from ._service import ActorRetrievalFailure
 
@@ -57,8 +59,11 @@ class _BaseJsonHandler(_BaseHandler):
     def check_csrf_protection(self):
         if self.csrf_protection:
             content_type = self.request.headers.get("Content-Type", "")
+            if content_type:
+                content_type, _ = tornado.httputil._parse_header(content_type)
             if content_type != "application/json":
-                self.set_status(415, "Content-Type must be application/json")
+                self.set_status(415)
+                self.write({"success": False, "message": "Content-Type must be application/json"})
                 return False
         return True
 
@@ -79,17 +84,18 @@ class _BaseJsonPostHandler(_BaseJsonHandler):
 
         try:
             data = tornado.escape.json_decode(self.request.body)
-        except ValueError as e:
-            self.set_status(400, "Invalid request body")
+        except ValueError:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid request body"})
             return
 
         self._post(data)
 
     def _post(self, data):
-        pass
+        raise NotImplementedError()
 
 
-class ApiLoadPlays(_BaseJsonHandler):
+class ApiPlayLoad(_BaseJsonHandler):
     def get(self):
         self.set_extra_headers()
         load_args = {}
@@ -116,21 +122,94 @@ class ApiLoadPlays(_BaseJsonHandler):
             db = db_service.retrieve_service().get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving database service: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
         try:
             plays = db.load_plays(**load_args).get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving plays from database: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
-        response = {"plays": recorded_play_schema.dump(plays, many=True)}
+        response = {"success": True, "plays": recorded_play_schema.dump(plays, many=True)}
         self.write(response)
 
 
-class ApiLoadCorrections(_BaseJsonHandler):
+class ApiPlayEdit(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "play" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play data."})
+            return
+
+        try:
+            play_edit = PlayEdit.from_dict(data["play"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play data."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500, "Database connection issue.")
+            return
+
+        try:
+            db.edit_play(play_edit).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": str(exc)})
+            return
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while editing play: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": True})
+
+
+class ApiPlayDelete(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "playId" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play ID."})
+            return
+
+        try:
+            play_id = int(data["playId"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play ID."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500, "Database connection issue.")
+            return
+
+        import time
+        time.sleep(5)
+
+        try:
+            success = db.delete_play(play_id).get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while editing play: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": success})
+
+
+class ApiCorrectionLoad(_BaseJsonHandler):
     def get(self):
         self.set_extra_headers()
         load_args = {}
@@ -151,15 +230,17 @@ class ApiLoadCorrections(_BaseJsonHandler):
             db = db_service.retrieve_service().get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving database service: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
         try:
             corrections = db.load_corrections(**load_args).get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving corrections from database: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
-        response = {"corrections": correction_schema.dump(corrections, many=True)}
+        response = {"success": True, "corrections": correction_schema.dump(corrections, many=True)}
         self.write(response)
