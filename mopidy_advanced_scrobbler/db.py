@@ -199,6 +199,10 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 )
 
     def delete_play(self, play_id: int):
+        play = self.find_play(play_id)
+        if play.submitted_at:
+            raise DbClientError("The relevant play was already submitted and can only be deleted through cleaning.")
+
         delete_query = "DELETE FROM plays WHERE play_id = ?"
         logger.debug("Executing DB query: %s", delete_query)
 

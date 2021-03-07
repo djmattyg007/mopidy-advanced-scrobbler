@@ -83,10 +83,10 @@
                   </template>
 
                   <ul class="menu-list">
-                    <li>
+                    <li v-if="!item.submittedAt">
                       <w-button text lg>Submit</w-button>
                     </li>
-                    <li>
+                    <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
                     </li>
                   </ul>
