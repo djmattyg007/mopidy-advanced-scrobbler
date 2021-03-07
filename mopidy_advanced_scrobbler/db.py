@@ -166,6 +166,8 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             raise DbClientError(f"No play found with ID '{play_edit.play_id}'.")
         elif play_edit.track_uri != play.track_uri:
             raise DbClientError(f"Mismatched track URI for play with ID '{play_edit.play_id}'.")
+        elif play.submitted_at:
+            raise DbClientError(f"The relevant play was already submitted and can no longer be updated.")
 
         with conn:
             conn.execute("BEGIN")

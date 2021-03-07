@@ -69,7 +69,12 @@
           >
             <template #item="{ item, label, header }">
               <template v-if="header.key === 'actions'">
-                <w-button class="ml1" bg-color="secondary" lg @click="editPlay(item)"
+                <w-button
+                  v-if="!item.submittedAt"
+                  class="ml1"
+                  bg-color="secondary"
+                  lg
+                  @click="editPlay(item)"
                   >Edit</w-button
                 >
                 <w-menu bottom align-right hide-on-menu-click>
