@@ -197,6 +197,10 @@ class ApiPlayDelete(_BaseJsonPostHandler):
 
         try:
             success = db.delete_play(play_id).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": str(exc)})
+            return
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while editing play: {exc}")
             self.set_status(500)
