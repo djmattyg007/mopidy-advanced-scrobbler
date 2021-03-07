@@ -170,12 +170,19 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         with conn:
             conn.execute("BEGIN")
 
-            play_update_query = "UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ? WHERE play_id = ?"
+            play_update_args = (play_edit.artist, play_edit.title, play_edit.album, Corrected.MANUALLY_CORRECTED)
+            if play_edit.update_all_unsubmitted:
+                play_update_query = """
+                UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ?
+                WHERE track_uri = ? AND submitted_at IS NULL
+                """
+                play_update_args += (play_edit.track_uri,)
+            else:
+                play_update_query = "UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ? WHERE play_id = ?"
+                play_update_args += (play_edit.play_id,)
+
             logger.debug("Executing DB query: %s", play_update_query)
-            conn.execute(
-                play_update_query,
-                (play_edit.artist, play_edit.title, play_edit.album, Corrected.MANUALLY_CORRECTED, play.play_id),
-            )
+            conn.execute(play_update_query, play_update_args)
 
             if play_edit.save_correction:
                 correction_upsert_query = """

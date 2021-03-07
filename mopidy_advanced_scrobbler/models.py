@@ -44,6 +44,7 @@ class PlayEdit(object):
     artist: str
     album: str
     save_correction: bool
+    update_all_unsubmitted: bool
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL)

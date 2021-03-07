@@ -163,6 +163,13 @@
           label="Save as Correction"
           :disabled="editFormSubmitting"
         />
+
+        <w-checkbox
+          class="d-flex mb4"
+          v-model="playEdit.updateAllUnsubmitted"
+          label="Update All Unsubmitted Plays"
+          :disabled="editFormSubmitting"
+        />
       </w-form>
 
       <template #actions>
@@ -257,6 +264,7 @@ interface EditablePlay {
   artist: string;
   album: string;
   saveCorrection: boolean;
+  updateAllUnsubmitted: boolean;
 }
 
 export default defineComponent({
@@ -381,6 +389,7 @@ export default defineComponent({
         artist: play.artist,
         album: play.album,
         saveCorrection: true,
+        updateAllUnsubmitted: true,
       };
       this.dialogEditShow = true;
     },
@@ -431,12 +440,17 @@ export default defineComponent({
         return;
       }
 
-      Object.assign(this.selectedPlay, {
-        artist: this.playEdit.artist,
-        title: this.playEdit.title,
-        album: this.playEdit.album,
-        corrected: Corrected.MANUALLY_CORRECTED,
-      });
+      if (this.playEdit.updateAllUnsubmitted === true) {
+        this.loadPlays();
+      } else {
+        Object.assign(this.selectedPlay, {
+          artist: this.playEdit.artist,
+          title: this.playEdit.title,
+          album: this.playEdit.album,
+          corrected: Corrected.MANUALLY_CORRECTED,
+        });
+      }
+
       this.dialogEditShow = false;
       this.$nextTick(() => {
         this.editFormSubmitting = false;
