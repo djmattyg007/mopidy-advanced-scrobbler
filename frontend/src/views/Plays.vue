@@ -424,6 +424,7 @@ export default defineComponent({
       }
 
       this.editFormSubmitting = true;
+      const updateAllUnsubmitted = this.playEdit.updateAllUnsubmitted;
 
       try {
         await api.post("/plays/edit", {
@@ -445,9 +446,7 @@ export default defineComponent({
         return;
       }
 
-      if (this.playEdit.updateAllUnsubmitted === true) {
-        this.loadPlays();
-      } else {
+      if (updateAllUnsubmitted === false) {
         Object.assign(this.selectedPlay, {
           artist: this.playEdit.artist,
           title: this.playEdit.title,
@@ -459,6 +458,9 @@ export default defineComponent({
       this.dialogEditShow = false;
       this.$nextTick(() => {
         this.editFormSubmitting = false;
+        if (updateAllUnsubmitted === true) {
+          this.loadPlays();
+        }
       });
     },
     async submitDeleteRequest(): Promise<void> {
