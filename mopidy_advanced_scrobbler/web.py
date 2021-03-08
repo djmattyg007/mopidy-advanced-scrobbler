@@ -8,7 +8,7 @@ import tornado.web
 from typing import TYPE_CHECKING, Optional, Awaitable
 
 from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum, DbClientError
-from mopidy_advanced_scrobbler.models import RecordedPlay, PlayEdit
+from mopidy_advanced_scrobbler.models import RecordedPlay, PlayEdit, CorrectionEdit
 from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
 from mopidy_advanced_scrobbler.network import network_service
 from ._service import ActorRetrievalFailure
@@ -331,5 +331,91 @@ class ApiCorrectionLoad(_BaseJsonHandler):
             self.write({"success": False, "message": "Database connection issue."})
             return
 
-        response = {"success": True, "corrections": correction_schema.dump(corrections, many=True)}
+        overall_corrections_count = -1
+        try:
+            overall_corrections_count = db.get_corrections_count().get()
+        except Exception as exc:
+            logger.exception(f"Error while retrieving play counts from database: {exc}")
+
+        response = {
+            "success": True,
+            "corrections": correction_schema.dump(corrections, many=True),
+            "counts": {
+                "overall": overall_corrections_count,
+            },
+        }
         self.write(response)
+
+
+class ApiCorrectionEdit(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "correction" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing correction data."})
+            return
+
+        try:
+            correction_edit = CorrectionEdit.from_dict(data["correction"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid correction data."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            db.edit_correction(correction_edit).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": str(exc)})
+            return
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while editing correction: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": True})
+
+
+class ApiCorrectionDelete(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "trackUri" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing track URI."})
+            return
+
+        try:
+            track_uri = str(data["trackUri"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid track URI."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            success = db.delete_correction(track_uri).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": str(exc)})
+            return
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while deleting correction: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": success})

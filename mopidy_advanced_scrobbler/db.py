@@ -15,7 +15,9 @@ if TYPE_CHECKING:
 
 
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import Corrected, Correction, Play, RecordedPlay, PlayEdit
+from mopidy_advanced_scrobbler.models import Corrected
+from mopidy_advanced_scrobbler.models import Play, RecordedPlay, PlayEdit
+from mopidy_advanced_scrobbler.models import Correction, CorrectionEdit
 
 
 logger = logging.getLogger(__name__)
@@ -273,24 +275,51 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
         return tuple(corrections)
 
-    def record_correction(self, correction: Correction):
-        query = """
-            INSERT OR REPLACE INTO corrections (
-                track_uri, artist, title, album
-            ) VALUES (
-                ?, ?, ?, ?
-            )
-        """
-        args = (
-            correction.track_uri,
-            correction.artist,
-            correction.title,
-            correction.album,
-        )
+    def get_corrections_count(self) -> int:
+        conn = self._connect()
+
+        query = "SELECT COUNT(*) as corrections_count FROM corrections"
+
+        logger.debug("Executing DB query: %s", query)
+        cursor = conn.execute(query)
+        result = cursor.fetchone()
+
+        return int(result["corrections_count"])
+
+    def edit_correction(self, correction_edit: CorrectionEdit):
+        conn = self._connect()
+
+        correction = self.find_correction(correction_edit.track_uri)
+        if not isinstance(correction, Correction):
+            raise DbClientError(f"No correction found for URI '{correction_edit.track_uri}'.")
+
+        with conn:
+            conn.execute("BEGIN")
+
+            correction_update_query = "UPDATE corrections SET artist = ?, title = ?, album = ? WHERE track_uri = ?"
+            correction_update_args = (correction_edit.artist, correction_edit.title, correction_edit.album, correction.track_uri)
+
+            logger.debug("Executing DB query: %s", correction_update_query)
+            conn.execute(correction_update_query, correction_update_args)
+
+            if correction_edit.update_all_unsubmitted:
+                play_update_query = """
+                UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ?
+                WHERE track_uri = ? AND submitted_at IS NULL
+                """
+                play_update_args = (correction_edit.artist, correction_edit.title, correction_edit.album, Corrected.MANUALLY_CORRECTED, correction.track_uri)
+
+                logger.debug("Executing DB query: %s", play_update_query)
+                conn.execute(play_update_query, play_update_args)
+
+    def delete_correction(self, track_uri: str) -> bool:
+        delete_query = "DELETE FROM corrections WHERE track_uri = ?"
+        delete_args = (track_uri,)
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", query)
-            conn.execute(query, args)
+            logger.debug("Executing DB query: %s", delete_query)
+            cursor = conn.execute(delete_query, delete_args)
+            return cursor.rowcount == 1
 
 
 db_service = Service(AdvancedScrobblerDb)

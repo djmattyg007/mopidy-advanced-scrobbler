@@ -56,6 +56,16 @@ class Correction(object):
     album: str
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclasses.dataclass(frozen=True)
+class CorrectionEdit(object):
+    track_uri: str
+    artist: str
+    title: str
+    album: str
+    update_all_unsubmitted: bool
+
+
 play_schema = Play.schema()
 recorded_play_schema = RecordedPlay.schema()
 play_edit_schema = PlayEdit.schema()
