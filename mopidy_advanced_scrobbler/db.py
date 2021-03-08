@@ -43,8 +43,10 @@ def dict_row_factory(cursor: sqlite3.Cursor, row: tuple):
 
 class Connection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):
+        kwargs["isolation_level"] = None
         super().__init__(*args, **kwargs)
         self.row_factory = dict_row_factory
+        self.execute("PRAGMA journal_mode = wal")
         self.execute("PRAGMA foreign_keys = ON")
 
 
