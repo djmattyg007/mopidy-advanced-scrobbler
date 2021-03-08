@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 import pykka
 import sqlite3
+from time import time as _time
 from typing import TYPE_CHECKING
 
 from ._service import Service
@@ -18,6 +19,10 @@ from mopidy_advanced_scrobbler.models import Corrected, Correction, Play, Record
 
 
 logger = logging.getLogger(__name__)
+
+
+def time() -> int:
+    return int(_time())
 
 
 class DbClientError(Exception):
@@ -203,11 +208,25 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         if play.submitted_at:
             raise DbClientError("The relevant play was already submitted and can only be deleted through cleaning.")
 
-        delete_query = "DELETE FROM plays WHERE play_id = ?"
-        logger.debug("Executing DB query: %s", delete_query)
+        delete_query = "DELETE FROM plays WHERE play_id = ? AND submitted_at IS NULL"
+        delete_args = (play_id,)
 
         with self._connect() as conn:
-            cursor = conn.execute(delete_query, (play_id,))
+            logger.debug("Executing DB query: %s", delete_query)
+            cursor = conn.execute(delete_query, delete_args)
+            return cursor.rowcount == 1
+
+    def mark_play_submitted(self, play_id: int):
+        play = self.find_play(play_id)
+        if play.submitted_at:
+            raise DbClientError("The relevant play was already submitted.")
+
+        update_query = "UPDATE plays SET submitted_at = ? WHERE play_id = ? AND submitted_at IS NULL"
+        update_args = (time(), play_id)
+
+        with self._connect() as conn:
+            logger.debug("Executing DB query: %s", update_query)
+            cursor = conn.execute(update_query, update_args)
             return cursor.rowcount == 1
 
     def find_correction(self, track_uri: str) -> Optional[Correction]:

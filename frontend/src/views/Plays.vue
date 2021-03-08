@@ -5,7 +5,7 @@
 
     <Promised :promise="plays">
       <template #combined="{ isPending, data, error }">
-        <w-card class="w-card__has-table">
+        <w-card class="w-card__has-table mb10">
           <template #title>
             <w-toolbar>
               <div class="spacer"></div>
@@ -77,14 +77,14 @@
                   @click="editPlay(item)"
                   >Edit</w-button
                 >
-                <w-menu bottom align-right hide-on-menu-click>
+                <w-menu left hide-on-menu-click>
                   <template #activator="{ on }">
                     <w-button class="ml1" v-on="on" bg-color="secondary" lg>Menu</w-button>
                   </template>
 
                   <ul class="menu-list">
                     <li v-if="!item.submittedAt">
-                      <w-button text lg>Submit</w-button>
+                      <w-button text lg @click="submitPlay(item)">Submit</w-button>
                     </li>
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
@@ -243,6 +243,50 @@
         >
       </template>
     </w-dialog>
+
+    <w-dialog
+      v-model="dialogSubmitShow"
+      title-class="primary-light1--bg white"
+      width="300px"
+      :persistent="scrobbleRequestSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-music-box</w-icon>
+        Submit Play
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeSubmitDialog"
+        ></w-button>
+      </template>
+
+      <p>Are you sure?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="secondary"
+          lg
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeSubmitDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="success"
+          lg
+          :loading="scrobbleRequestSubmitting"
+          :disabled="scrobbleRequestSubmitting"
+          @click="submitScrobbleRequest"
+          >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
   </main>
 </template>
 
@@ -286,11 +330,15 @@ export default defineComponent({
       plays: new Promise<ReadonlyArray<Play>>((resolve) => resolve([])),
       selectedPlay: null as Play | null,
       playEdit: null as EditablePlay | null,
+
       dialogEditShow: false,
       dialogDeleteShow: false,
+      dialogSubmitShow: false,
+
       editFormValid: null,
       editFormSubmitting: false,
       deleteRequestSubmitting: false,
+      scrobbleRequestSubmitting: false,
     };
   },
   computed: {
@@ -402,11 +450,18 @@ export default defineComponent({
       this.selectedPlay = play;
       this.dialogDeleteShow = true;
     },
+    submitPlay(play: Play): void {
+      this.selectedPlay = play;
+      this.dialogSubmitShow = true;
+    },
     closeEditDialog(): void {
       this.dialogEditShow = false;
     },
     closeDeleteDialog(): void {
       this.dialogDeleteShow = false;
+    },
+    closeSubmitDialog(): void {
+      this.dialogSubmitShow = false;
     },
     async submitEditForm(): Promise<void> {
       if (this.editFormSubmitting) {
@@ -501,6 +556,47 @@ export default defineComponent({
         if (success === true) {
           this.loadPlays();
         }
+      });
+    },
+    async submitScrobbleRequest(): Promise<void> {
+      if (this.scrobbleRequestSubmitting) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("A scrobble request is already pending.");
+        return;
+      } else if (!this.selectedPlay) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("No play was selected for submission.");
+        return;
+      }
+
+      this.scrobbleRequestSubmitting = true;
+      let success = false;
+      try {
+        await api.post("/plays/submit", {
+          playId: this.selectedPlay.playId,
+        });
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while submitting play";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+      }
+
+      if (success === true) {
+        Object.assign(this.selectedPlay, { submittedAt: Math.floor(Date.now() / 1000) });
+      }
+
+      this.dialogSubmitShow = false;
+      this.$nextTick(() => {
+        this.scrobbleRequestSubmitting = false;
       });
     },
   },

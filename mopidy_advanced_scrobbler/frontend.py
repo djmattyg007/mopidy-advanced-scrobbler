@@ -12,7 +12,7 @@ from mopidy.core import CoreListener
 from mopidy_advanced_scrobbler import Extension
 from mopidy_advanced_scrobbler.models import Correction, prepare_play
 from mopidy_advanced_scrobbler.db import db_service
-from mopidy_advanced_scrobbler.network import NowPlayingData, network_service
+from mopidy_advanced_scrobbler.network import network_service, NetworkException, NowPlayingData
 from ._service import ActorRetrievalFailure
 
 
@@ -131,6 +131,8 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         self._now_playing_notify_debouncer = None
         logger.info("Advanced-Scrobbler submitting now playing notification: %s", track.uri)
 
+        correction: Optional[Correction]
+
         try:
             db = db_service.retrieve_service().get(timeout=10)
             correction = db.find_correction(track.uri).get(timeout=10)
@@ -147,6 +149,8 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         try:
             network = network_service.retrieve_service().get(timeout=10)
             network.send_now_playing_notification(**now_playing_data)
+        except NetworkException as exc:
+            logger.exception(f"Error while sending now playing notification: {exc}")
         except ActorRetrievalFailure as exc:
             logger.exception(f"Network service found to be unavailable: {exc}")
             network_service.request_service_restart(self.config)

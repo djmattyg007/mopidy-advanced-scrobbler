@@ -8,8 +8,9 @@ import tornado.web
 from typing import TYPE_CHECKING, Optional, Awaitable
 
 from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum, DbClientError
-from mopidy_advanced_scrobbler.models import PlayEdit
+from mopidy_advanced_scrobbler.models import RecordedPlay, PlayEdit
 from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
+from mopidy_advanced_scrobbler.network import network_service
 from ._service import ActorRetrievalFailure
 
 if TYPE_CHECKING:
@@ -202,9 +203,79 @@ class ApiPlayDelete(_BaseJsonPostHandler):
             self.write({"success": False, "message": str(exc)})
             return
         except ActorRetrievalFailure as exc:
-            logger.exception(f"Error while editing play: {exc}")
+            logger.exception(f"Error while deleting play: {exc}")
             self.set_status(500)
             self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": success})
+
+
+class ApiPlaySubmit(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "playId" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play ID."})
+            return
+
+        try:
+            play_id = int(data["playId"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play ID."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            play: RecordedPlay = db.find_play(play_id).get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while finding play in database: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        if not play:
+            self.set_status(400)
+            self.write({"success": False, "message": "Play does not exist."})
+            return
+        elif play.submitted_at:
+            self.set_status(400)
+            self.write({"success": False, "message": "Play was already submitted."})
+            return
+
+        try:
+            network = network_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving network service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Last.fm connection issue."})
+            return
+
+        try:
+            network.submit_scrobble(play).get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while scrobbling play: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Last.fm connection issue."})
+            return
+
+        try:
+            success = db.mark_play_submitted(play.play_id).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": f"Error after successful scrobble: {str(exc)}"})
+            return
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while marking play as submitted: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue after ."})
             return
 
         self.write({"success": success})

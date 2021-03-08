@@ -3,6 +3,7 @@ import pykka
 import pylast
 from typing import Optional, TypedDict
 
+from mopidy_advanced_scrobbler.models import Play
 from ._service import Service
 
 
@@ -14,6 +15,10 @@ PYLAST_ERRORS = (
     pylast.NetworkError,
     pylast.WSError,
 )
+
+
+class NetworkException(Exception):
+    pass
 
 
 class NowPlayingData(TypedDict):
@@ -48,7 +53,25 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
         try:
             self._network.update_now_playing(**now_playing_data)
         except PYLAST_ERRORS as exc:
-            logger.exception(f"Error while submitting now playing data to {self._network}: {exc}")
+            logger.exception(f"Error while sending now playing data to {self._network}: {exc}")
+            raise NetworkException(f"Error while sending now playing data to {self._network}") from exc
+
+    def submit_scrobble(self, play: Play):
+        album = play.album if play.album else None
+        mbid = play.musicbrainz_id if play.musicbrainz_id else None
+
+        try:
+            self._network.scrobble(
+                artist=play.artist,
+                title=play.title,
+                album=album,
+                timestamp=play.played_at,
+                duration=play.duration,
+                mbid=mbid,
+            )
+        except PYLAST_ERRORS as exc:
+            logger.exception(f"Error while submitting scrobble to {self._network}: {exc}")
+            raise NetworkException(f"Error while submitting scrobble to {self._network}") from exc
 
 
 network_service = Service(AdvancedScrobblerNetwork)
