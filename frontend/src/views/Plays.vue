@@ -33,7 +33,7 @@
                 :disabled="isPending || isFirstPage"
                 @click="goToPreviousPage"
               />
-              <span class="mx2 make-this-text-bold">{{ pageNumber }}</span>
+              <span class="mx2 text-bold">{{ pageNumber }}</span>
               <w-button
                 icon="mdi mdi-step-forward"
                 text
@@ -51,7 +51,7 @@
                 text
                 lg
                 class="ml3"
-                aria-label="Refresh Plays"
+                aria-label="Refresh List"
                 :disabled="isPending"
                 @click="refresh"
               ></w-button>
@@ -412,6 +412,13 @@ export default defineComponent({
         });
       }
     },
+    dialogSubmitShow(newVal: boolean): void {
+      if (!newVal) {
+        this.$nextTick(() => {
+          this.selectedPlay = null;
+        });
+      }
+    },
   },
   methods: {
     goToNextPage(): void {
@@ -419,11 +426,12 @@ export default defineComponent({
       this.loadPlays();
     },
     goToPreviousPage(): void {
-      if (this.pageNumber === 1) {
+      const currentPage = this.pageNumber;
+      if (currentPage === 1) {
         return;
       }
 
-      this.pageNumber -= 1;
+      this.pageNumber = currentPage - 1;
       this.loadPlays();
     },
     goToFirstPage(): void {
@@ -477,6 +485,7 @@ export default defineComponent({
     closeSubmitDialog(): void {
       this.dialogSubmitShow = false;
     },
+
     async submitEditForm(): Promise<void> {
       if (this.editFormSubmitting) {
         // TODO: replace with a wave-ui notification once they can be centrally managed
@@ -544,6 +553,7 @@ export default defineComponent({
       }
 
       this.deleteRequestSubmitting = true;
+
       let success = false;
       try {
         await api.post("/plays/delete", {
@@ -584,6 +594,7 @@ export default defineComponent({
       }
 
       this.scrobbleRequestSubmitting = true;
+
       let success = false;
       try {
         await api.post("/plays/submit", {

@@ -198,10 +198,10 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ?
                 WHERE track_uri = ? AND submitted_at IS NULL
                 """
-                play_update_args += (play_edit.track_uri,)
+                play_update_args += (play.track_uri,)
             else:
                 play_update_query = "UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ? WHERE play_id = ?"
-                play_update_args += (play_edit.play_id,)
+                play_update_args += (play.play_id,)
 
             logger.debug("Executing DB query: %s", play_update_query)
             conn.execute(play_update_query, play_update_args)
@@ -218,7 +218,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                     (play.track_uri, play_edit.artist, play_edit.title, play_edit.album),
                 )
 
-    def delete_play(self, play_id: int):
+    def delete_play(self, play_id: int) -> bool:
         play = self.find_play(play_id)
         if play.submitted_at:
             raise DbClientError("The relevant play was already submitted and can only be deleted through cleaning.")
@@ -231,7 +231,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             cursor = conn.execute(delete_query, delete_args)
             return cursor.rowcount == 1
 
-    def mark_play_submitted(self, play_id: int):
+    def mark_play_submitted(self, play_id: int) -> bool:
         play = self.find_play(play_id)
         if play.submitted_at:
             raise DbClientError("The relevant play was already submitted.")
