@@ -419,3 +419,40 @@ class ApiCorrectionDelete(_BaseJsonPostHandler):
             return
 
         self.write({"success": success})
+
+
+class ApiApproveAutoCorrection(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "playId" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play ID."})
+            return
+
+        try:
+            play_id = int(data["playId"])
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play ID."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            db.approve_auto_correction(play_id).get()
+        except DbClientError as exc:
+            self.set_status(400)
+            self.write({"success": False, "message": str(exc)})
+            return
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while approving auto-correction: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": True})

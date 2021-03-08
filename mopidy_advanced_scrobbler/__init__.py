@@ -45,6 +45,7 @@ class Extension(ext.Extension):
         from .web import OverrideStaticFileHandler, StaticFileHandler
         from .web import ApiPlayDelete, ApiPlayEdit, ApiPlayLoad, ApiPlaySubmit
         from .web import ApiCorrectionDelete, ApiCorrectionEdit, ApiCorrectionLoad
+        from .web import ApiApproveAutoCorrection
 
         allowed_origins = {
             origin.lower() for origin in config["http"]["allowed_origins"] if origin
@@ -67,6 +68,7 @@ class Extension(ext.Extension):
             (r"/api/corrections/load", ApiCorrectionLoad, api_args),
             (r"/api/corrections/edit", ApiCorrectionEdit, api_args),
             (r"/api/corrections/delete", ApiCorrectionDelete, api_args),
+            (r"/api/approve-auto", ApiApproveAutoCorrection, api_args),
             (r"/favicon\.ico$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.ico"}),
             (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
             (r"/", OverrideStaticFileHandler, vue_router_args),

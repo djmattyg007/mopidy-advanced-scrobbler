@@ -91,6 +91,10 @@
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="submitPlay(item)">Submit</w-button>
                     </li>
+                    <li v-if="item.corrected === 2">
+                      <!-- IF auto-corrected -->
+                      <w-button text lg @click="approveAutoCorrection(item)">Submit</w-button>
+                    </li>
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
                     </li>
@@ -201,6 +205,50 @@
           :loading="editFormSubmitting"
           :disabled="editFormValid === false || editFormSubmitting"
           >Save</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-dialog
+      v-model="dialogApproveAutoCorrectionShow"
+      title-class="primary-light1--bg white"
+      width="300px"
+      :persistent="autoCorrectionApprovalSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-delete</w-icon>
+        Approve Auto-Correction
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="autoCorrectionApprovalSubmitting"
+          @click="closeApproveAutoCorrectionDialog"
+        ></w-button>
+      </template>
+
+      <p>Are you sure?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="secondary"
+          lg
+          :disabled="autoCorrectionApprovalSubmitting"
+          @click="closeSubmitDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="success"
+          lg
+          :loading="autoCorrectionApprovalSubmitting"
+          :disabled="autoCorrectionApprovalSubmitting"
+          @click="submitAutoCorrectionApproval"
+          >Confirm</w-button
         >
       </template>
     </w-dialog>
@@ -346,11 +394,13 @@ export default defineComponent({
       playEdit: null as EditablePlay | null,
 
       dialogEditShow: false,
+      dialogApproveAutoCorrectionShow: false,
       dialogDeleteShow: false,
       dialogSubmitShow: false,
 
       editFormValid: null,
       editFormSubmitting: false,
+      autoCorrectionApprovalSubmitting: false,
       deleteRequestSubmitting: false,
       scrobbleRequestSubmitting: false,
     };
@@ -468,6 +518,10 @@ export default defineComponent({
       };
       this.dialogEditShow = true;
     },
+    approveAutoCorrection(play: Play): void {
+      this.selectedPlay = play;
+      this.dialogApproveAutoCorrectionShow = true;
+    },
     deletePlay(play: Play): void {
       this.selectedPlay = play;
       this.dialogDeleteShow = true;
@@ -478,6 +532,9 @@ export default defineComponent({
     },
     closeEditDialog(): void {
       this.dialogEditShow = false;
+    },
+    closeApproveAutoCorrectionDialog(): void {
+      this.dialogApproveAutoCorrectionShow = false;
     },
     closeDeleteDialog(): void {
       this.dialogDeleteShow = false;
@@ -539,6 +596,50 @@ export default defineComponent({
         if (updateAllUnsubmitted === true) {
           this.loadPlays();
         }
+      });
+    },
+    async submitAutoCorrectionApproval(): Promise<void> {
+      if (this.autoCorrectionApprovalSubmitting) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("An approval is already submitting.");
+        return;
+      } else if (!this.selectedPlay) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("No play was selected.");
+        return;
+      }
+
+      this.autoCorrectionApprovalSubmitting = true;
+
+      let success = false;
+      try {
+        await api.post("/approve-auto", {
+          playId: this.selectedPlay.playId,
+        });
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while approving auto-correction";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+      }
+
+      if (success === true) {
+        Object.assign(this.selectedPlay, {
+          corrected: Corrected.MANUALLY_CORRECTED,
+        });
+      }
+
+      this.dialogApproveAutoCorrectionShow = false;
+      this.$nextTick(() => {
+        this.autoCorrectionApprovalSubmitting = false;
       });
     },
     async submitDeleteRequest(): Promise<void> {

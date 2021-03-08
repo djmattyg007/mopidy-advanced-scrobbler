@@ -321,5 +321,35 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             cursor = conn.execute(delete_query, delete_args)
             return cursor.rowcount == 1
 
+    def approve_auto_correction(self, play_id: int):
+        play = self.find_play(play_id)
+        if not isinstance(play, RecordedPlay):
+            raise DbClientError(f"No play found with ID '{play_id}'.")
+        elif play.corrected != Corrected.AUTO_CORRECTED:
+            raise DbClientError(f"The relevant play was not auto-corrected.")
+
+        correction = self.find_correction(play.track_uri)
+        if correction:
+            raise DbClientError("A manual correction already exists for this play's track.")
+
+        with self._connect() as conn:
+            conn.execute("BEGIN")
+
+            correction_insert_query = """
+            INSERT INTO corrections (track_uri, artist, title, album) VALUES (?, ?, ?, ?)
+            ON CONFLICT (track_uri) DO NOTHING
+            """
+            correction_insert_args = (play.track_uri, play.artist, play.title, play.album)
+
+            logger.debug("Executing DB query: %s", correction_insert_query)
+            conn.execute(correction_insert_query, correction_insert_args)
+
+            if not play.submitted_at:
+                play_update_query = "UPDATE plays SET corrected = ? WHERE play_id = ? AND submitted_at IS NULL"
+                play_update_args = (Corrected.MANUALLY_CORRECTED, play.play_id)
+
+                logger.debug("Executing DB query: %s", play_update_query)
+                conn.execute(play_update_query, play_update_args)
+
 
 db_service = Service(AdvancedScrobblerDb)
