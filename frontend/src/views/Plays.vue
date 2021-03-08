@@ -546,7 +546,7 @@ export default defineComponent({
           errMsg += ".";
         }
 
-         // TODO: replace with a wave-ui notification once they can be centrally managed
+        // TODO: replace with a wave-ui notification once they can be centrally managed
         alert(errMsg);
       }
 

@@ -157,7 +157,8 @@ class ApiPlayEdit(_BaseJsonPostHandler):
             db = db_service.retrieve_service().get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving database service: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
         try:
@@ -193,7 +194,8 @@ class ApiPlayDelete(_BaseJsonPostHandler):
             db = db_service.retrieve_service().get()
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while retrieving database service: {exc}")
-            self.set_status(500, "Database connection issue.")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
             return
 
         try:
