@@ -142,6 +142,19 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
         return tuple(plays)
 
+    def get_plays_count(self, *, only_unsubmitted: bool = False) -> int:
+        conn = self._connect()
+
+        query = "SELECT COUNT(*) as plays_count FROM plays"
+        if only_unsubmitted:
+            query += " WHERE submitted_at IS NULL"
+
+        logger.debug("Executing DB query: %s", query)
+        cursor = conn.execute(query)
+        result = cursor.fetchone()
+
+        return int(result["plays_count"])
+
     def record_play(self, play: Play):
         query = """
             INSERT INTO plays (

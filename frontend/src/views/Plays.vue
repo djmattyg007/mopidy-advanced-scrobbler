@@ -7,7 +7,12 @@
       <template #combined="{ isPending, data, error }">
         <w-card class="w-card__has-table mb10">
           <template #title>
-            <w-toolbar>
+            <w-toolbar class="px2">
+              <span v-if="data && data.counts.overall >= 0">
+                <span class="text-bold">{{ data.counts.overall }}</span> plays
+                <span class="text-bold">({{ data.counts.unsubmitted }}</span> unsubmitted)
+              </span>
+
               <div class="spacer"></div>
 
               <w-button
@@ -35,7 +40,7 @@
                 lg
                 class="mx1"
                 aria-label="Next Page"
-                :disabled="isPending || !data || data.length < pageSize"
+                :disabled="isPending || !data || data.plays.length < pageSize"
                 @click="goToNextPage"
               />
 
@@ -63,7 +68,7 @@
           <w-table
             v-else
             :headers="headers"
-            :items="data || []"
+            :items="data ? data.plays : []"
             :loading="isPending"
             :mobile-breakpoint="900"
           >
@@ -304,6 +309,10 @@ import UnixTimestamp from "@/components/UnixTimestamp.vue";
 
 interface LoadPlaysResponse {
   readonly plays: ReadonlyArray<Play>;
+  readonly counts: {
+    readonly overall: number;
+    readonly unsubmitted: number;
+  };
 }
 
 interface EditablePlay {
@@ -327,7 +336,12 @@ export default defineComponent({
     return {
       pageNumber: 1,
       pageSize: 50,
-      plays: new Promise<ReadonlyArray<Play>>((resolve) => resolve([])),
+      plays: new Promise<LoadPlaysResponse>((resolve) => {
+        return resolve({
+          plays: [],
+          counts: { overall: -1, unsubmitted: -1 },
+        });
+      }),
       selectedPlay: null as Play | null,
       playEdit: null as EditablePlay | null,
 
@@ -423,14 +437,14 @@ export default defineComponent({
     loadPlays(): void {
       this.plays = this.retrievePlays();
     },
-    async retrievePlays(): Promise<ReadonlyArray<Play>> {
+    async retrievePlays(): Promise<LoadPlaysResponse> {
       const response = await api.get<LoadPlaysResponse>("/plays/load", {
         params: {
           page: this.pageNumber,
           page_size: this.pageSize,
         },
       });
-      return response.data.plays;
+      return response.data;
     },
 
     editPlay(play: Play): void {

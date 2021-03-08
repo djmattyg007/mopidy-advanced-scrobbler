@@ -135,7 +135,22 @@ class ApiPlayLoad(_BaseJsonHandler):
             self.write({"success": False, "message": "Database connection issue."})
             return
 
-        response = {"success": True, "plays": recorded_play_schema.dump(plays, many=True)}
+        overall_plays_count = -1
+        unsubmitted_plays_count = -1
+        try:
+            overall_plays_count = db.get_plays_count().get()
+            unsubmitted_plays_count = db.get_plays_count(only_unsubmitted=True).get()
+        except Exception as exc:
+            logger.exception(f"Error while retrieving play counts from database: {exc}")
+
+        response = {
+            "success": True,
+            "plays": recorded_play_schema.dump(plays, many=True),
+            "counts": {
+                "overall": overall_plays_count,
+                "unsubmitted": unsubmitted_plays_count,
+            },
+        }
         self.write(response)
 
 
