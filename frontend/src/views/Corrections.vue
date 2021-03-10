@@ -5,7 +5,7 @@
 
     <Promised :promise="corrections">
       <template #combined="{ isPending, data, error }">
-        <w-card class="w-card__has-table mb10">
+        <w-card class="mb10" content-class="pa0">
           <template #title>
             <w-toolbar class="px2">
               <span v-if="data && data.counts.overall >= 0">

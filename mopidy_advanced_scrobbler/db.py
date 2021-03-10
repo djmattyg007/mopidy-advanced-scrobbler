@@ -181,8 +181,6 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             conn.execute(query, args)
 
     def edit_play(self, play_edit: PlayEdit):
-        conn = self._connect()
-
         play = self.find_play(play_edit.play_id)
         if not isinstance(play, RecordedPlay):
             raise DbClientError(f"No play found with ID '{play_edit.play_id}'.")
@@ -191,7 +189,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         elif play.submitted_at:
             raise DbClientError(f"The relevant play was already submitted and can no longer be updated.")
 
-        with conn:
+        with self._connect() as conn:
             conn.execute("BEGIN")
 
             play_update_args = (play_edit.artist, play_edit.title, play_edit.album, Corrected.MANUALLY_CORRECTED)
@@ -222,7 +220,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
     def delete_play(self, play_id: int) -> bool:
         play = self.find_play(play_id)
-        if play.submitted_at:
+        if not isinstance(play, RecordedPlay):
+            raise DbClientError(f"No play found with ID '{play_id}'.")
+        elif play.submitted_at:
             raise DbClientError("The relevant play was already submitted and can only be deleted through cleaning.")
 
         delete_query = "DELETE FROM plays WHERE play_id = ? AND submitted_at IS NULL"
@@ -235,7 +235,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
     def mark_play_submitted(self, play_id: int) -> bool:
         play = self.find_play(play_id)
-        if play.submitted_at:
+        if not isinstance(play, RecordedPlay):
+            raise DbClientError(f"No play found with ID '{play_id}'.")
+        elif play.submitted_at:
             raise DbClientError("The relevant play was already submitted.")
 
         update_query = "UPDATE plays SET submitted_at = ? WHERE play_id = ? AND submitted_at IS NULL"
