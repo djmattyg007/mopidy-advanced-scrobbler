@@ -3,12 +3,20 @@ from __future__ import annotations
 import dataclasses
 from dataclasses_json import dataclass_json, LetterCase
 from enum import IntEnum
-from typing import Optional
+from music_metadata_filter.filter import MetadataFilter
+from music_metadata_filter.filters import make_spotify_filter, make_remastered_filter
+from typing import Mapping, Optional
+from urllib.parse import urlparse
 
 from mopidy.models import Track
 
 
-# TODO: Add "not corrected but verified" status
+metadata_filters_mapping: Mapping[str, MetadataFilter] = {
+    "spotify": make_spotify_filter(),
+    "local": make_remastered_filter(),
+}
+
+
 class Corrected(IntEnum):
     NOT_CORRECTED = 0
     MANUALLY_CORRECTED = 1
@@ -73,35 +81,28 @@ correction_schema = Correction.schema()
 
 
 def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
+    track_uri = track.uri
     if correction:
         artist = correction.artist
         title = correction.title
+        album = correction.album or ""
         corrected = Corrected.MANUALLY_CORRECTED
     else:
-        artist_names = []
-        for artist in track.artists:
-            if artist.name:
-                artist_name = artist.name.strip()
-                if artist_name:
-                    artist_names.append(artist_name)
-
-        artist = ", ".join(sorted(artist_names))
-        title = track.name or ""
+        artist, title, album = format_track_data(track)
         corrected = Corrected.NOT_CORRECTED
 
+        track_uri_parsed = urlparse(track_uri)
+        metadata_filter = metadata_filters_mapping.get(track_uri_parsed.scheme, None)
+        if metadata_filter:
+            artist, title, album, corrected = apply_metadata_filter(metadata_filter, artist, title, album)
+
     data = {
-        "track_uri": track.uri,
+        "track_uri": track_uri,
         "artist": artist,
         "title": title,
+        "album": album,
         "corrected": corrected,
     }
-
-    if correction:
-        data["album"] = correction.album or ""
-    elif track.album and track.album.name:
-        data["album"] = track.album.name
-    else:
-        data["album"] = ""
 
     if track.musicbrainz_id:
         data["musicbrainz_id"] = track.musicbrainz_id
@@ -117,3 +118,34 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
     data["submitted_at"] = None
 
     return Play.from_dict(data)
+
+
+def format_track_data(track: Track):
+    artist_names = []
+    for artist in track.artists:
+        if artist.name:
+            artist_name = artist.name.strip()
+            if artist_name:
+                artist_names.append(artist_name)
+
+    artist = ", ".join(sorted(artist_names))
+    title = track.name or ""
+    if track.album and track.album.name:
+        album = track.album.name
+    else:
+        album = ""
+
+    return artist, title, album
+
+
+def apply_metadata_filter(metadata_filter: MetadataFilter, orig_artist: str, orig_title: str, orig_album: str):
+    artist = metadata_filter.filter_field("artist", orig_artist)
+    title = metadata_filter.filter_field("track", orig_title)
+    album = metadata_filter.filter_field("album", orig_album)
+
+    if artist != orig_artist or title != orig_title or album != orig_album:
+        corrected = Corrected.AUTO_CORRECTED
+    else:
+        corrected = Corrected.NOT_CORRECTED
+
+    return artist, title, album, corrected
