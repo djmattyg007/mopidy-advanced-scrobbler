@@ -69,7 +69,7 @@ class Extension(ext.Extension):
             (r"/api/corrections/edit", ApiCorrectionEdit, api_args),
             (r"/api/corrections/delete", ApiCorrectionDelete, api_args),
             (r"/api/approve-auto", ApiApproveAutoCorrection, api_args),
-            (r"/favicon\.ico$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.ico"}),
+            (r"/favicon\.png$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.png"}),
             (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
             (r"/", OverrideStaticFileHandler, vue_router_args),
         ]
