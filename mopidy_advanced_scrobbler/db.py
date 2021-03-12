@@ -346,12 +346,11 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             logger.debug("Executing DB query: %s", correction_insert_query)
             conn.execute(correction_insert_query, correction_insert_args)
 
-            if not play.submitted_at:
-                play_update_query = "UPDATE plays SET corrected = ? WHERE play_id = ? AND submitted_at IS NULL"
-                play_update_args = (Corrected.MANUALLY_CORRECTED, play.play_id)
+            play_update_query = "UPDATE plays SET corrected = ? WHERE play_id = ?"
+            play_update_args = (Corrected.MANUALLY_CORRECTED, play.play_id)
 
-                logger.debug("Executing DB query: %s", play_update_query)
-                conn.execute(play_update_query, play_update_args)
+            logger.debug("Executing DB query: %s", play_update_query)
+            conn.execute(play_update_query, play_update_args)
 
 
 db_service = Service(AdvancedScrobblerDb)
