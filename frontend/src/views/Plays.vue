@@ -93,7 +93,9 @@
                     </li>
                     <li v-if="item.corrected === 2">
                       <!-- IF auto-corrected -->
-                      <w-button text lg @click="approveAutoCorrection(item)">Submit</w-button>
+                      <w-button text lg @click="approveAutoCorrection(item)"
+                        >Approve Auto-Correction</w-button
+                      >
                     </li>
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
