@@ -142,7 +142,9 @@ def format_track_artists(track: Track) -> str:
 
     output = ", ".join(all_but_last)
     if last:
-        output += f" and {last[0]}"
+        if output:
+            output += " and "
+        output += last[0]
 
     return output
 
