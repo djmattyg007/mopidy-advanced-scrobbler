@@ -152,7 +152,7 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
         play = prepare_play(track, int(time.time() - time_position_sec), correction)
         if play.duration < 30:
-            logger.debug("Advanced-Scrobbler track to short to scrobble (%d secs): %s", time_position_sec, track.uri)
+            logger.debug("Advanced-Scrobbler track too short to scrobble (%d secs): %s", time_position_sec, track.uri)
             return
 
         threshold = self.config["scrobble_time_threshold"] / 100
