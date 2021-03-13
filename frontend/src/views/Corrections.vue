@@ -57,7 +57,7 @@
             </w-toolbar>
           </template>
 
-          <w-table v-if="error" :headers="headers" :items="[]" :mobile-breakpoint="700">
+          <w-table v-if="error" :headers="headers" :items="[]" :mobile-breakpoint="900">
             <template #no-data>
               <p>An error occurred while fetching data.</p>
               <br />
@@ -69,7 +69,7 @@
             :headers="headers"
             :items="data ? data.corrections : []"
             :loading="isPending"
-            :mobile-breakpoint="700"
+            :mobile-breakpoint="900"
           >
             <template #item="{ item, label, header }">
               <template v-if="header.key === 'actions'">
