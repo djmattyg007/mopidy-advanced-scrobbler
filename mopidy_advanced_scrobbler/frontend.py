@@ -169,6 +169,8 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
                 db_restart_future.get(timeout=10)
                 db = db_service.retrieve_service().get(timeout=10)
 
+            logger.info("Advanced-Scrobbler recording finished playback: %s", track.uri)
+
             db.record_play(play)
         except ActorRetrievalFailure as exc:
             logger.exception(f"Database connection found to be unavailable: {exc}")
