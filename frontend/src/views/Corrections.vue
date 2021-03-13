@@ -82,7 +82,7 @@
                 >
               </template>
               <template v-else-if="header.key === 'trackUri'">
-                <w-tooltip v-if="label.length > 40" transition="scale">
+                <w-tooltip top v-if="label.length > 40" transition="scale">
                   <template #activator="{ on }">
                     <span v-on="on">{{ label.slice(0, 40) }}...</span>
                   </template>
