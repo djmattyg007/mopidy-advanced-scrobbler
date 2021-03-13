@@ -105,7 +105,27 @@
                 </w-menu>
               </template>
               <template v-else-if="header.key === 'corrected'">
-                <corrected-label :value="item.corrected" />
+                <template v-if="[1, 2].includes(item.corrected)">
+                  <w-tooltip :detach-to="true">
+                    <template #activator="{ on }">
+                      <corrected-label v-on="on" :value="item.corrected" />
+                    </template>
+
+                    <dl>
+                      <dt>Orig. Artist</dt>
+                      <dd>{{ item.origArtist }}</dd>
+
+                      <dt>Orig. Title</dt>
+                      <dd>{{ item.origTitle }}</dd>
+
+                      <dt>Orig. Album</dt>
+                      <dd>{{ item.origAlbum }}</dd>
+                    </dl>
+                  </w-tooltip>
+                </template>
+                <template v-else>
+                  <corrected-label :value="item.corrected" />
+                </template>
               </template>
               <template v-else-if="header.key === 'playedAt'">
                 <unix-timestamp :value="item.playedAt" />
