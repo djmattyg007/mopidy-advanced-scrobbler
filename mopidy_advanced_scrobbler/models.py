@@ -5,7 +5,7 @@ from dataclasses_json import dataclass_json, LetterCase
 from enum import IntEnum
 from music_metadata_filter.filter import MetadataFilter
 from music_metadata_filter.filters import make_spotify_filter, make_remastered_filter
-from typing import Mapping, Optional
+from typing import Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
 from mopidy.models import Track
@@ -30,6 +30,9 @@ class Play(object):
     artist: str
     title: str
     album: str
+    orig_artist: str
+    orig_title: str
+    orig_album: str
     corrected: Corrected
     musicbrainz_id: Optional[str]
     duration: int  # Number of seconds
@@ -82,25 +85,30 @@ correction_schema = Correction.schema()
 
 def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
     track_uri = track.uri
+    orig_artist, orig_title, orig_album = format_track_data(track)
+
     if correction:
         artist = correction.artist
         title = correction.title
         album = correction.album or ""
         corrected = Corrected.MANUALLY_CORRECTED
     else:
-        artist, title, album = format_track_data(track)
-        corrected = Corrected.NOT_CORRECTED
-
         track_uri_parsed = urlparse(track_uri)
         metadata_filter = metadata_filters_mapping.get(track_uri_parsed.scheme, None)
         if metadata_filter:
-            artist, title, album, corrected = apply_metadata_filter(metadata_filter, artist, title, album)
+            artist, title, album, corrected = apply_metadata_filter(metadata_filter, orig_artist, orig_title, orig_album)
+        else:
+            artist, title, album = orig_artist, orig_title, orig_album
+            corrected = Corrected.NOT_CORRECTED
 
     data = {
         "track_uri": track_uri,
         "artist": artist,
         "title": title,
         "album": album,
+        "orig_artist": orig_artist,
+        "orig_title": orig_title,
+        "orig_album": orig_album,
         "corrected": corrected,
     }
 
@@ -120,7 +128,7 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
     return Play.from_dict(data)
 
 
-def format_track_data(track: Track):
+def format_track_artists(track: Track) -> str:
     artist_names = []
     for artist in track.artists:
         if artist.name:
@@ -128,7 +136,19 @@ def format_track_data(track: Track):
             if artist_name:
                 artist_names.append(artist_name)
 
-    artist = ", ".join(sorted(artist_names))
+    sorted_artists = sorted(artist_names)
+    all_but_last = sorted_artists[:-1]
+    last = sorted_artists[-1:]
+
+    output = ", ".join(all_but_last)
+    if last:
+        output += f" and {last[0]}"
+
+    return output
+
+
+def format_track_data(track: Track) -> Tuple[str, str, str]:
+    artist = format_track_artists(track)
     title = track.name or ""
     if track.album and track.album.name:
         album = track.album.name

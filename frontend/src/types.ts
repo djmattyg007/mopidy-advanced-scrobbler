@@ -10,6 +10,9 @@ export interface Play {
   readonly artist: string;
   readonly title: string;
   readonly album: string;
+  readonly origArtist: string;
+  readonly origTitle: string;
+  readonly origAlbum: string;
   readonly corrected: Corrected;
   readonly musicbrainzId: string | null;
   readonly duration: number; // Number of seconds as an integer

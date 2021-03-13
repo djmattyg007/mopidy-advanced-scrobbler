@@ -160,9 +160,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
     def record_play(self, play: Play):
         query = """
             INSERT INTO plays (
-                track_uri, artist, title, album, corrected, musicbrainz_id, duration, played_at
+                track_uri, artist, title, album, orig_artist, orig_title, orig_album, corrected, musicbrainz_id, duration, played_at
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
         """
         args = (
@@ -170,6 +170,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             play.artist,
             play.title,
             play.album,
+            play.orig_artist,
+            play.orig_title,
+            play.orig_album,
             play.corrected.value,
             play.musicbrainz_id,
             play.duration,
