@@ -29,6 +29,22 @@ class NowPlayingData(TypedDict):
     duration: Optional[int]
 
 
+def format_now_playing_data(play: Play) -> NowPlayingData:
+    data = {
+        "artist": play.artist,
+        "title": play.title,
+    }
+
+    if play.album:
+        data["album"] = play.album,
+    if play.duration:
+        data["duration"] = play.duration
+    if play.musicbrainz_id:
+        data["mbid"] = play.musicbrainz_id
+
+    return data
+
+
 class AdvancedScrobblerNetwork(pykka.ThreadingActor):
     def __init__(self, config):
         super().__init__()
@@ -49,7 +65,9 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
             logger.exception(f"Error during Advanced-Scrobbler Last.fm setup: {exc}")
             raise
 
-    def send_now_playing_notification(self, now_playing_data: NowPlayingData):
+    def send_now_playing_notification(self, play: Play):
+        now_playing_data = format_now_playing_data(play)
+
         try:
             self._network.update_now_playing(**now_playing_data)
         except PYLAST_ERRORS as exc:

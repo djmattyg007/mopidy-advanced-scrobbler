@@ -24,33 +24,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def prepare_now_playing_data(track: Track, correction: Optional[Correction]) -> NowPlayingData:
-    if correction:
-        artist = correction.artist
-        title = correction.title
-    else:
-        artist = ", ".join(sorted([artist.name for artist in track.artists]))
-        title = track.name or ""
-
-    data = {
-        "artist": artist,
-        "title": title,
-    }
-
-    if correction:
-        data["album"] = correction.album or ""
-    elif track.album and track.album.name:
-        data["album"] = track.album.name
-
-    if track.length:
-        data["duration"] = track.length // 1000
-
-    if track.musicbrainz_id:
-        data["mbid"] = track.musicbrainz_id
-
-    return data
-
-
 class DebounceActor(pykka.ThreadingActor):
     def __init__(self, debounce_id: str, wrapped: pykka.CallableProxy, timeout: int, *args, **kwargs):
         super().__init__()
@@ -144,11 +117,11 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}")
             correction = None
 
-        now_playing_data = prepare_now_playing_data(track, correction)
+        play = prepare_play(track, -1, correction)
 
         try:
             network = network_service.retrieve_service().get(timeout=10)
-            network.send_now_playing_notification(**now_playing_data)
+            network.send_now_playing_notification(play)
         except NetworkException as exc:
             logger.exception(f"Error while sending now playing notification: {exc}")
         except ActorRetrievalFailure as exc:
