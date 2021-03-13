@@ -240,7 +240,7 @@
           bg-color="secondary"
           lg
           :disabled="autoCorrectionApprovalSubmitting"
-          @click="closeSubmitDialog"
+          @click="closeApproveAutoCorrectionDialog"
           >Cancel</w-button
         >
         <w-button
