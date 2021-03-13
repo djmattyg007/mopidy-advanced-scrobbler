@@ -214,7 +214,7 @@
     <w-dialog
       v-model="dialogApproveAutoCorrectionShow"
       title-class="primary-light1--bg white"
-      width="300px"
+      width="370px"
       :persistent="autoCorrectionApprovalSubmitting"
     >
       <template #title>
