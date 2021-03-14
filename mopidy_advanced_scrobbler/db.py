@@ -279,7 +279,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
     def mark_plays_submitted(self, play_ids: Collection[int]):
         update_query_template = "UPDATE plays SET submitted_at = ? WHERE submitted_at IS NULL AND play_id IN ({0})"
-        placeholders = ("?, " * len(play_ids))[:-2]
+        placeholders = ("?, " * len(play_ids))[:-2]  # remove the last ", "
         update_query = update_query_template.format(placeholders)
         update_args = (time(), *play_ids)
 
