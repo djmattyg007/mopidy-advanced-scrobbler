@@ -435,7 +435,7 @@
       </template>
 
       <div v-if="scrobblingResponse">
-        <ol>
+        <ol style="list-style: none;">
           <li>
             <span class="text-bold">Found Plays</span>:
             <span :class="{ error: scrobblingResponse.foundPlays.length === 0 }">{{
