@@ -252,6 +252,16 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             cursor = conn.execute(delete_query, delete_args)
             return cursor.rowcount == 1
 
+    def delete_plays(self, play_ids: Collection[int]):
+        delete_query_template = "DELETE FROM plays WHERE submitted_at IS NULL AND play_id IN ({0})"
+        placeholders = ("?, " * len(play_ids))[:-2]  # remove the last ", "
+        delete_query = delete_query_template.format(placeholders)
+        delete_args = play_ids
+
+        with self._connect() as conn:
+            logger.debug("Executing DB query: %s", delete_query)
+            conn.execute(delete_query, delete_args)
+
     def mark_play_submitted(self, play_id: int) -> bool:
         play = self.find_play(play_id)
         if not isinstance(play, RecordedPlay):

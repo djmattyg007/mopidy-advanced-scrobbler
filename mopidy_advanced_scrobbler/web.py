@@ -229,6 +229,41 @@ class ApiPlayDelete(_BaseJsonPostHandler):
         self.write({"success": success})
 
 
+class ApiPlayDeleteMany(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "playIds" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play IDs."})
+            return
+
+        try:
+            if not isinstance(data["playIds"], list):
+                raise ValueError()
+            play_ids = tuple(map(int, data["playIds"]))
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play IDs."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            db.delete_plays(play_ids).get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while deleting plays: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        self.write({"success": True})
+
+
 class ApiPlaySubmit(_BaseJsonPostHandler):
     def _post(self, data):
         if "playId" not in data:

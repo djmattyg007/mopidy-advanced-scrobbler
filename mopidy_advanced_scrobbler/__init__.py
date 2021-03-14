@@ -43,7 +43,7 @@ class Extension(ext.Extension):
 
     def factory_webapp(self, config, core):
         from .web import OverrideStaticFileHandler, StaticFileHandler
-        from .web import ApiPlayDelete, ApiPlayEdit, ApiPlayLoad, ApiPlaySubmit
+        from .web import ApiPlayDelete, ApiPlayDeleteMany, ApiPlayEdit, ApiPlayLoad, ApiPlaySubmit
         from .web import ApiCorrectionDelete, ApiCorrectionEdit, ApiCorrectionLoad
         from .web import ApiApproveAutoCorrection, ApiScrobble
 
@@ -64,6 +64,7 @@ class Extension(ext.Extension):
             (r"/api/plays/load", ApiPlayLoad, api_args),
             (r"/api/plays/edit", ApiPlayEdit, api_args),
             (r"/api/plays/delete", ApiPlayDelete, api_args),
+            (r"/api/plays/delete-many", ApiPlayDeleteMany, api_args),
             (r"/api/plays/submit", ApiPlaySubmit, api_args),
             (r"/api/corrections/load", ApiCorrectionLoad, api_args),
             (r"/api/corrections/edit", ApiCorrectionEdit, api_args),
