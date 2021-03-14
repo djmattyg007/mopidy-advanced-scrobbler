@@ -287,7 +287,7 @@ class ApiPlaySubmit(_BaseJsonPostHandler):
             success = db.mark_play_submitted(play.play_id).get()
         except DbClientError as exc:
             self.set_status(400)
-            self.write({"success": False, "message": f"Error after successful scrobble: {str(exc)}"})
+            self.write({"success": False, "message": f"Error after successful scrobble: {exc}"})
             return
         except ActorRetrievalFailure as exc:
             logger.exception(f"Error while marking play as submitted: {exc}")

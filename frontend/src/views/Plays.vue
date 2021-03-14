@@ -52,6 +52,7 @@
                 lg
                 class="ml3"
                 aria-label="Refresh List"
+                title="Refresh List"
                 :disabled="isPending"
                 @click="refresh"
               ></w-button>
