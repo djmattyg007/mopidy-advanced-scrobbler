@@ -4,7 +4,8 @@ import dataclasses
 from dataclasses_json import dataclass_json, LetterCase
 from enum import IntEnum
 from music_metadata_filter.filter import MetadataFilter
-from music_metadata_filter.filters import make_spotify_filter, make_remastered_filter
+from music_metadata_filter.filters import make_remastered_filter
+from music_metadata_filter.opinionated_filters import make_spotify_filter
 from typing import Mapping, Optional, Tuple
 from urllib.parse import urlparse
 

@@ -47,6 +47,16 @@
               <div class="spacer"></div>
 
               <w-button
+                icon="mdi mdi-upload"
+                text
+                lg
+                class="ml3"
+                aria-label="Scrobble Unsubmitted"
+                title="Scrobble Unsubmitted"
+                :disabled="isPending || scrobbleRequestSubmitting"
+                @click="scrobbleUnsubmitted"
+              ></w-button>
+              <w-button
                 icon="mdi mdi-refresh"
                 text
                 lg
@@ -101,6 +111,9 @@
                     </li>
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
+                    </li>
+                    <li v-if="!item.submittedAt">
+                      <w-button text lg @click="scrobbleToCheckpoint(item)">Scrobble To Here</w-button>
                     </li>
                   </ul>
                 </w-menu>
@@ -359,8 +372,107 @@
           lg
           :loading="scrobbleRequestSubmitting"
           :disabled="scrobbleRequestSubmitting"
+          @click="submitSingleScrobbleRequest"
+          >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-dialog
+      v-model="dialogScrobbleShow"
+      title-class="primary-light1--bg white"
+      width="300px"
+      :persistent="scrobbleRequestSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-upload</w-icon>
+        Scrobble
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeScrobbleDialog"
+        ></w-button>
+      </template>
+
+      <p>Are you sure?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="secondary"
+          lg
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeScrobbleDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="success"
+          lg
+          :loading="scrobbleRequestSubmitting"
+          :disabled="scrobbleRequestSubmitting"
           @click="submitScrobbleRequest"
           >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-overlay v-model="scrobblingOverlay" :persistent="true" :opacity="0.5">
+      <w-progress class="ma1" circle color="green" size="96" />
+    </w-overlay>
+
+    <w-dialog v-model="dialogScrobbleSuccessShow" title-class="success-light2--bg" width="400px">
+      <template #title>
+        <w-icon class="mr2">mdi mdi-check-circle</w-icon>
+        Success
+        <div class="spacer" />
+        <w-button icon="mdi mdi-close" text xl @click="closeScrobbleSuccessDialog" />
+      </template>
+
+      <div v-if="scrobblingResponse">
+        <ol>
+          <li>
+            <span class="text-bold">Found Plays</span>:
+            <span :class="{ error: scrobblingResponse.foundPlays.length === 0 }">{{
+              scrobblingResponse.foundPlays.length
+            }}</span>
+          </li>
+          <li>
+            <span class="text-bold">Scrobbled Plays</span>:
+            <span
+              :class="{
+                error:
+                  scrobblingResponse.scrobbledPlays.length < scrobblingResponse.foundPlays.length,
+              }"
+              >{{ scrobblingResponse.scrobbledPlays.length }}</span
+            >
+          </li>
+          <li>
+            <span class="text-bold">Marked Plays</span>:
+            <span
+              :class="{
+                error:
+                  scrobblingResponse.markedPlays.length < scrobblingResponse.scrobbledPlays.length,
+              }"
+              >{{ scrobblingResponse.markedPlays.length }}</span
+            >
+          </li>
+        </ol>
+        <template v-if="scrobblingResponse.message">
+          <br />
+          <p>{{ scrobblingResponse.message }}</p>
+        </template>
+      </div>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button class="ml4" bg-color="primary" lg @click="closeScrobbleSuccessDialog"
+          >Close</w-button
         >
       </template>
     </w-dialog>
@@ -385,6 +497,14 @@ interface LoadPlaysResponse {
     readonly overall: number;
     readonly unsubmitted: number;
   };
+}
+
+interface ScrobbleResponse {
+  readonly success: boolean;
+  readonly foundPlays: ReadonlyArray<number>;
+  readonly scrobbledPlays: ReadonlyArray<number>;
+  readonly markedPlays: ReadonlyArray<number>;
+  readonly message: string | null;
 }
 
 interface EditablePlay {
@@ -427,6 +547,11 @@ export default defineComponent({
       autoCorrectionApprovalSubmitting: false,
       deleteRequestSubmitting: false,
       scrobbleRequestSubmitting: false,
+
+      dialogScrobbleShow: false,
+      scrobblingOverlay: false,
+      scrobblingResponse: null as ScrobbleResponse | null,
+      dialogScrobbleSuccessShow: false,
     };
   },
   computed: {
@@ -490,6 +615,14 @@ export default defineComponent({
       if (!newVal) {
         this.$nextTick(() => {
           this.selectedPlay = null;
+        });
+      }
+    },
+    dialogScrobbleSuccessShow(newVal: boolean): void {
+      if (!newVal) {
+        this.$nextTick(() => {
+          this.selectedPlay = null;
+          this.scrobblingResponse = null;
         });
       }
     },
@@ -565,6 +698,20 @@ export default defineComponent({
     },
     closeSubmitDialog(): void {
       this.dialogSubmitShow = false;
+    },
+
+    scrobbleUnsubmitted(): void {
+      this.dialogScrobbleShow = true;
+    },
+    scrobbleToCheckpoint(play: Play): void {
+      this.selectedPlay = play;
+      this.dialogScrobbleShow = true;
+    },
+    closeScrobbleDialog(): void {
+      this.dialogScrobbleShow = false;
+    },
+    closeScrobbleSuccessDialog(): void {
+      this.dialogScrobbleSuccessShow = false;
     },
 
     async submitEditForm(): Promise<void> {
@@ -707,7 +854,7 @@ export default defineComponent({
         }
       });
     },
-    async submitScrobbleRequest(): Promise<void> {
+    async submitSingleScrobbleRequest(): Promise<void> {
       if (this.scrobbleRequestSubmitting) {
         // TODO: replace with a wave-ui notification once they can be centrally managed
         alert("A scrobble request is already pending.");
@@ -747,6 +894,60 @@ export default defineComponent({
       this.dialogSubmitShow = false;
       this.$nextTick(() => {
         this.scrobbleRequestSubmitting = false;
+      });
+    },
+    async submitScrobbleRequest(): Promise<void> {
+      if (this.scrobbleRequestSubmitting) {
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert("A scrobble request is already pending.");
+        return;
+      }
+
+      this.scrobbleRequestSubmitting = true;
+      this.scrobblingOverlay = true;
+      this.dialogScrobbleShow = false;
+
+      const params: Record<string, unknown> = {};
+      if (this.selectedPlay) {
+        params["checkpoint"] = this.selectedPlay.playId;
+      }
+
+      let success = false;
+      let response: ScrobbleResponse;
+      try {
+        response = (await api.post<ScrobbleResponse>("/scrobble", params)).data;
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while scrobbling";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+
+        this.scrobblingOverlay = false;
+        this.$nextTick(() => {
+          this.scrobbleRequestSubmitting = false;
+          this.selectedPlay = null;
+        });
+        return;
+      }
+
+      this.scrobblingResponse = response;
+      this.dialogScrobbleSuccessShow = true;
+      this.scrobblingOverlay = false;
+
+      this.$nextTick(() => {
+        this.scrobbleRequestSubmitting = false;
+        this.selectedPlay = null;
+        if (success === true) {
+          this.refresh();
+        }
       });
     },
   },

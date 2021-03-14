@@ -2,15 +2,16 @@ from __future__ import annotations
 
 import logging
 from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
+from time import sleep
 import tornado.escape
 import tornado.httputil
 import tornado.web
-from typing import TYPE_CHECKING, Optional, Awaitable
+from typing import TYPE_CHECKING, List, Optional
 
 from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum, DbClientError
 from mopidy_advanced_scrobbler.models import RecordedPlay, PlayEdit, CorrectionEdit
 from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
-from mopidy_advanced_scrobbler.network import network_service
+from mopidy_advanced_scrobbler.network import network_service, NetworkException
 from ._service import ActorRetrievalFailure
 
 if TYPE_CHECKING:
@@ -456,3 +457,90 @@ class ApiApproveAutoCorrection(_BaseJsonPostHandler):
             return
 
         self.write({"success": True})
+
+
+class ApiScrobble(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "checkpoint" in data:
+            try:
+                checkpoint = int(data["checkpoint"])
+            except Exception:
+                self.set_status(400)
+                self.write({"success": False, "message": "Invalid checkpoint."})
+                return
+        else:
+            checkpoint = None
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            network = network_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving network service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Last.fm connection issue."})
+            return
+
+        found_plays: List[int] = []
+        scrobbled_plays: List[int] = []
+        marked_plays: List[int] = []
+        err_msg: Optional[str] = None
+        for _ in range(0, 5):
+            try:
+                plays = db.load_unsubmitted_plays_batch(checkpoint=checkpoint).get()
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while retrieving unsubmitted plays: {exc}")
+                err_msg = "Error while retrieving unsubmitted plays."
+                break
+
+            if not plays:
+                break
+
+            play_ids = tuple(map(lambda play: play.play_id, plays))
+            found_plays.extend(play_ids)
+
+            try:
+                network.submit_scrobbles(plays).get()
+            except NetworkException as exc:
+                logger.exception(f"Network error while scrobbling plays: {exc}")
+                err_msg = "Network error while scrobbling plays."
+                break
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while scrobbling plays: {exc}")
+                err_msg = "Error while scrobbling plays."
+                break
+
+            scrobbled_plays.extend(play_ids)
+
+            try:
+                db.mark_plays_submitted(play_ids).get()
+            except DbClientError as exc:
+                logger.exception(f"Error after successful scrobble: {exc}")
+                err_msg = "Error after successful scrobble."
+                break
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while marking plays as submitted: {exc}")
+                err_msg = "Error while marking plays as submitted."
+                break
+            except Exception as exc:
+                logger.exception(f"Error while marking plays as submitted: {exc}")
+                err_msg = "Error while marking plays as submitted."
+                break
+
+            marked_plays.extend(play_ids)
+            # Vague rate-limiting of requests to the Network API
+            sleep(1)
+
+        self.write({
+            "success": True,
+            "foundPlays": found_plays,
+            "scrobbledPlays": scrobbled_plays,
+            "markedPlays": marked_plays,
+            "message": err_msg,
+        })

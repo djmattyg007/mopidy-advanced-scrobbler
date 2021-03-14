@@ -102,7 +102,7 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
 
     def debounced_now_playing_notify(self, track: Track):
         self._now_playing_notify_debouncer = None
-        logger.info("Advanced-Scrobbler submitting now playing notification: %s", track.uri)
+        logger.debug("Advanced-Scrobbler submitting now playing notification: %s", track.uri)
 
         correction: Optional[Correction]
 
@@ -169,7 +169,7 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
                 db_restart_future.get(timeout=10)
                 db = db_service.retrieve_service().get(timeout=10)
 
-            logger.info("Advanced-Scrobbler recording finished playback: %s", track.uri)
+            logger.debug("Advanced-Scrobbler recording finished playback: %s", track.uri)
 
             db.record_play(play)
         except ActorRetrievalFailure as exc:

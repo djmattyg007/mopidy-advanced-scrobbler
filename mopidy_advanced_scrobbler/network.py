@@ -1,7 +1,7 @@
 import logging
 import pykka
 import pylast
-from typing import Optional, TypedDict
+from typing import Iterable, Optional, TypedDict
 
 from mopidy_advanced_scrobbler.models import Play
 from ._service import Service
@@ -29,6 +29,10 @@ class NowPlayingData(TypedDict):
     duration: Optional[int]
 
 
+class PlayData(NowPlayingData):
+    timestamp: int
+
+
 def format_now_playing_data(play: Play) -> NowPlayingData:
     data = {
         "artist": play.artist,
@@ -41,6 +45,17 @@ def format_now_playing_data(play: Play) -> NowPlayingData:
         data["duration"] = play.duration
     if play.musicbrainz_id:
         data["mbid"] = play.musicbrainz_id
+
+    return data
+
+
+def format_play_data(play: Play) -> PlayData:
+    base_data = format_now_playing_data(play)
+
+    data = {
+        **base_data,
+        "timestamp": play.played_at,
+    }
 
     return data
 
@@ -68,6 +83,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
     def send_now_playing_notification(self, play: Play):
         now_playing_data = format_now_playing_data(play)
 
+        logger.info("Sending 'now playing' notification: %s", play.track_uri)
         try:
             self._network.update_now_playing(**now_playing_data)
         except PYLAST_ERRORS as exc:
@@ -75,21 +91,28 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
             raise NetworkException(f"Error while sending now playing data to {self._network}") from exc
 
     def submit_scrobble(self, play: Play):
-        album = play.album if play.album else None
-        mbid = play.musicbrainz_id if play.musicbrainz_id else None
+        play_data = format_play_data(play)
 
+        logger.info("Submitting scrobble for play %d: %s", play.play_id, play.track_uri)
         try:
-            self._network.scrobble(
-                artist=play.artist,
-                title=play.title,
-                album=album,
-                timestamp=play.played_at,
-                duration=play.duration,
-                mbid=mbid,
-            )
+            self._network.scrobble(**play_data)
         except PYLAST_ERRORS as exc:
             logger.exception(f"Error while submitting scrobble to {self._network}: {exc}")
             raise NetworkException(f"Error while submitting scrobble to {self._network}") from exc
+
+    def submit_scrobbles(self, plays: Iterable[Play]):
+        plays_data = []
+        play_ids = []
+        for play in plays:
+            plays_data.append(format_play_data(play))
+            play_ids.append(play.play_id)
+
+        logger.info("Submitting scrobbles for plays: %s", ", ".join(map(str, play_ids)))
+        try:
+            self._network.scrobble_many(plays_data)
+        except PYLAST_ERRORS as exc:
+            logger.exception(f"Error while submitting scrobbles to {self._network}: {exc}")
+            raise NetworkException(f"Error while submitting scrobbles to {self._network}") from exc
 
 
 network_service = Service(AdvancedScrobblerNetwork)

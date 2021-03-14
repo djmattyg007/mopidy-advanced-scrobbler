@@ -144,6 +144,22 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
         return tuple(plays)
 
+    def load_unsubmitted_plays_batch(self, *, checkpoint: Optional[int] = None) -> Collection[RecordedPlay]:
+        conn = self._connect()
+
+        query = "SELECT * FROM plays WHERE submitted_at IS NULL"
+        if checkpoint:
+            query += f" AND play_id <= {checkpoint}"
+        query += " ORDER BY play_id ASC LIMIT 50"
+        logger.debug("Executing DB query: %s", query)
+        cursor = conn.execute(query)
+
+        plays: List[RecordedPlay] = []
+        for row in cursor:
+            plays.append(RecordedPlay.from_dict(row))
+
+        return tuple(plays)
+
     def get_plays_count(self, *, only_unsubmitted: bool = False) -> int:
         conn = self._connect()
 
@@ -250,6 +266,16 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             logger.debug("Executing DB query: %s", update_query)
             cursor = conn.execute(update_query, update_args)
             return cursor.rowcount == 1
+
+    def mark_plays_submitted(self, play_ids: Collection[int]):
+        update_query_template = "UPDATE plays SET submitted_at = ? WHERE submitted_at IS NULL AND play_id IN ({0})"
+        placeholders = ("?, " * len(play_ids))[:-2]
+        update_query = update_query_template.format(placeholders)
+        update_args = (time(), *play_ids)
+
+        with self._connect() as conn:
+            logger.debug("Executing DB query: %s", update_query)
+            conn.execute(update_query, update_args)
 
     def find_correction(self, track_uri: str) -> Optional[Correction]:
         conn = self._connect()
