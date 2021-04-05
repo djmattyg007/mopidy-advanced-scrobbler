@@ -16,7 +16,7 @@
     "vue-promised": "^2.0.3",
     "vue-router": "^4.0.5",
     "vuex": "^4.0.0",
-    "wave-ui": "^2.15.0"
+    "wave-ui": "^2.16.0"
   },
   "devDependencies": {
     "@types/luxon": "^1.26.2",

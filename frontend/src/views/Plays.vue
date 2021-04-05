@@ -47,7 +47,27 @@
               <div class="spacer"></div>
 
               <w-button
+                icon="mdi mdi-delete-forever"
+                text
+                lg
+                class="ml3"
+                aria-label="Delete Selected"
+                title="Delete Selected"
+                :disabled="isPending || deleteRequestSubmitting || !canDeleteMultiSelection"
+                @click="deleteMultiSelected"
+              ></w-button>
+              <w-button
                 icon="mdi mdi-upload"
+                text
+                lg
+                class="ml3"
+                aria-label="Scrobble Selected"
+                title="Scrobble Selected"
+                :disabled="isPending || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
+                @click="scrobbleMultiSelected"
+              ></w-button>
+              <w-button
+                icon="mdi mdi-auto-upload"
                 text
                 lg
                 class="ml3"
@@ -80,9 +100,11 @@
             v-else
             :headers="headers"
             :items="data ? data.plays : []"
+            :selectable-rows="true"
             :loading="isPending"
             :mobile-breakpoint="900"
             class="bd0"
+            @row-select="updateMultiSelectPlays"
           >
             <template #item="{ item, label, header }">
               <template v-if="header.key === 'actions'">
@@ -385,7 +407,7 @@
       :persistent="scrobbleRequestSubmitting"
     >
       <template #title>
-        <w-icon class="mr2">mdi mdi-upload</w-icon>
+        <w-icon class="mr2">mdi mdi-auto-upload</w-icon>
         Scrobble
         <div class="spacer" />
         <w-button
@@ -417,6 +439,95 @@
           :loading="scrobbleRequestSubmitting"
           :disabled="scrobbleRequestSubmitting"
           @click="submitScrobbleRequest"
+          >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-dialog
+      v-model="dialogMultiDeleteShow"
+      title-class="error-dark1--bg white"
+      width="400px"
+      :persistent="deleteRequestSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-delete</w-icon>
+        Delete Plays
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="deleteRequestSubmitting"
+          @click="closeDeleteMultiSelectedDialog"
+        >
+        </w-button>
+      </template>
+
+      <p>Are you sure you want to delete {{ playsMultiSelectedCountLabel }}?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="confirm"
+          lg
+          :disabled="deleteRequestSubmitting"
+          @click="closeDeleteMultiSelectedDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="error"
+          lg
+          :loading="deleteRequestSubmitting"
+          :disabled="deleteRequestSubmitting"
+          @click="submitMultiDeleteRequest"
+          >Confirm</w-button
+        >
+      </template>
+    </w-dialog>
+
+    <w-dialog
+      v-model="dialogMultiScrobbleShow"
+      title-class="primary-light1--bg white"
+      width="400px"
+      :persistent="scrobbleRequestSubmitting"
+    >
+      <template #title>
+        <w-icon class="mr2">mdi mdi-upload</w-icon>
+        Scrobble
+        <div class="spacer" />
+        <w-button
+          icon="mdi mdi-close"
+          color="white"
+          text
+          xl
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeScrobbleMultiSelectedDialog"
+        ></w-button>
+      </template>
+
+      <p>Are you sure you want to scrobble {{ playsMultiSelectedCountLabel }}?</p>
+
+      <template #actions>
+        <div class="spacer" />
+        <w-button
+          class="ml4"
+          bg-color="secondary"
+          lg
+          :disabled="scrobbleRequestSubmitting"
+          @click="closeScrobbleMultiSelectedDialog"
+          >Cancel</w-button
+        >
+        <w-button
+          class="ml4"
+          bg-color="success"
+          lg
+          :loading="scrobbleRequestSubmitting"
+          :disabled="scrobbleRequestSubmitting"
+          @click="submitMultiScrobbleRequest"
           >Confirm</w-button
         >
       </template>
@@ -482,7 +593,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import { Promised } from "vue-promised";
-import type { TableHeader } from "wave-ui";
+import type { TableHeader, TableRowSelectEvent } from "wave-ui";
 
 import { Play, Corrected } from "@/types";
 
@@ -537,10 +648,14 @@ export default defineComponent({
       selectedPlay: null as Play | null,
       playEdit: null as EditablePlay | null,
 
+      multiSelectPlays: [] as Play[],
+
       dialogEditShow: false,
       dialogApproveAutoCorrectionShow: false,
       dialogDeleteShow: false,
       dialogSubmitShow: false,
+      dialogMultiDeleteShow: false,
+      dialogMultiScrobbleShow: false,
 
       editFormValid: null,
       editFormSubmitting: false,
@@ -590,6 +705,23 @@ export default defineComponent({
           return true;
         },
       };
+    },
+    playsMultiSelected(): boolean {
+      return this.multiSelectPlays.length > 0;
+    },
+    canDeleteMultiSelection(): boolean {
+      return this.playsMultiSelected && this.multiSelectPlays.every((play) => !play.submittedAt);
+    },
+    canScrobbleMultiSelection(): boolean {
+      return this.playsMultiSelected && this.multiSelectPlays.every((play) => !play.submittedAt);
+    },
+    playsMultiSelectedCountLabel(): string {
+      const count = this.multiSelectPlays.length;
+      if (count === 1) {
+        return `${count} play`;
+      } else {
+        return `${count} plays`;
+      }
     },
   },
   created() {
@@ -661,6 +793,9 @@ export default defineComponent({
       });
       return response.data;
     },
+    updateMultiSelectPlays(data: TableRowSelectEvent<Play>): void {
+      this.multiSelectPlays = data.selectedRows;
+    },
 
     editPlay(play: Play): void {
       this.selectedPlay = play;
@@ -712,6 +847,27 @@ export default defineComponent({
     },
     closeScrobbleSuccessDialog(): void {
       this.dialogScrobbleSuccessShow = false;
+    },
+
+    deleteMultiSelected(): void {
+      if (this.canDeleteMultiSelection === true) {
+        this.dialogMultiDeleteShow = true;
+      } else {
+        alert("Invalid selection - must select only deleteable plays.");
+      }
+    },
+    closeDeleteMultiSelectedDialog(): void {
+      this.dialogMultiDeleteShow = false;
+    },
+    scrobbleMultiSelected(): void {
+      if (this.canScrobbleMultiSelection === true) {
+        this.dialogMultiScrobbleShow = true;
+      } else {
+        alert("Invalid selection - must select only submittable plays.");
+      }
+    },
+    closeScrobbleMultiSelectedDialog(): void {
+      this.dialogMultiScrobbleShow = false;
     },
 
     async submitEditForm(): Promise<void> {
@@ -945,6 +1101,103 @@ export default defineComponent({
       this.$nextTick(() => {
         this.scrobbleRequestSubmitting = false;
         this.selectedPlay = null;
+        if (success === true) {
+          this.refresh();
+        }
+      });
+    },
+
+    async submitMultiDeleteRequest(): Promise<void> {
+      if (this.deleteRequestSubmitting) {
+        alert("A delete request is already pending.");
+        return;
+      } else if (!this.canDeleteMultiSelection) {
+        alert("Invalid plays selection.");
+        return;
+      }
+
+      this.deleteRequestSubmitting = true;
+
+      const params = {
+        playIds: this.multiSelectPlays.map((play) => play.playId),
+      };
+
+      let success = false;
+      try {
+        await api.post("/plays/delete-many", params);
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while deleting plays";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+      }
+
+      this.dialogMultiDeleteShow = false;
+      this.$nextTick(() => {
+        this.deleteRequestSubmitting = false;
+        if (success === true) {
+          this.loadPlays();
+          this.multiSelectPlays = [];
+        }
+      });
+    },
+    async submitMultiScrobbleRequest(): Promise<void> {
+      if (this.scrobbleRequestSubmitting) {
+        alert("A scrobble request is already pending.");
+        return;
+      } else if (!this.canScrobbleMultiSelection) {
+        alert("Invalid plays selection.");
+        return;
+      }
+
+      this.scrobbleRequestSubmitting = true;
+      this.scrobblingOverlay = true;
+      this.dialogMultiScrobbleShow = false;
+
+      const params = {
+        playIds: this.multiSelectPlays.map((play) => play.playId),
+      };
+
+      let success = false;
+      let response: ScrobbleResponse;
+      try {
+        response = (await api.post<ScrobbleResponse>("/plays/scrobble-many", params)).data;
+        success = true;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while scrobbling";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        // TODO: replace with a wave-ui notification once they can be centrally managed
+        alert(errMsg);
+
+        this.scrobblingOverlay = false;
+        this.$nextTick(() => {
+          this.scrobbleRequestSubmitting = false;
+        });
+        return;
+      }
+
+      this.scrobblingResponse = response;
+      this.dialogScrobbleSuccessShow = true;
+      this.scrobblingOverlay = false;
+
+      this.$nextTick(() => {
+        this.scrobbleRequestSubmitting = false;
+        this.multiSelectPlays = [];
         if (success === true) {
           this.refresh();
         }

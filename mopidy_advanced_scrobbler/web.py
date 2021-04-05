@@ -494,6 +494,99 @@ class ApiApproveAutoCorrection(_BaseJsonPostHandler):
         self.write({"success": True})
 
 
+class ApiPlayScrobbleMany(_BaseJsonPostHandler):
+    def _post(self, data):
+        if "playIds" not in data:
+            self.set_status(400)
+            self.write({"success": False, "message": "Missing play IDs."})
+            return
+
+        try:
+            if not isinstance(data["playIds"], list):
+                raise ValueError()
+            play_ids = tuple(map(int, data["playIds"]))
+        except Exception:
+            self.set_status(400)
+            self.write({"success": False, "message": "Invalid play IDs."})
+            return
+
+        try:
+            db = db_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving database service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Database connection issue."})
+            return
+
+        try:
+            network = network_service.retrieve_service().get()
+        except ActorRetrievalFailure as exc:
+            logger.exception(f"Error while retrieving network service: {exc}")
+            self.set_status(500)
+            self.write({"success": False, "message": "Last.fm connection issue."})
+            return
+
+        found_plays: List[int] = []
+        scrobbled_plays: List[int] = []
+        marked_plays: List[int] = []
+        err_msg: Optional[str] = None
+        for batch_start_id in range(0, 250, 50):
+            play_ids_batch = play_ids[batch_start_id:batch_start_id + 50]
+
+            try:
+                unsubmitted_plays = db.find_plays(play_ids_batch, only_unsubmitted=True).get()
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while retrieving unsubmitted plays: {exc}")
+                err_msg = "Error while retrieving unsubmitted plays."
+                break
+
+            if not unsubmitted_plays:
+                break
+
+            unsubmitted_play_ids = tuple(map(lambda play: play.play_id, unsubmitted_plays))
+            found_plays.extend(unsubmitted_play_ids)
+
+            try:
+                network.submit_scrobbles(unsubmitted_plays).get()
+            except NetworkException as exc:
+                logger.exception(f"Network error while scrobbling plays: {exc}")
+                err_msg = "Network error while scrobbling plays."
+                break
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while scrobbling plays: {exc}")
+                err_msg = "Error while scrobbling plays."
+                break
+
+            scrobbled_plays.extend(unsubmitted_play_ids)
+
+            try:
+                db.mark_plays_submitted(unsubmitted_play_ids).get()
+            except DbClientError as exc:
+                logger.exception(f"Error after successful scrobble: {exc}")
+                err_msg = "Error after successful scrobble."
+                break
+            except ActorRetrievalFailure as exc:
+                logger.exception(f"Error while marking plays as submitted: {exc}")
+                err_msg = "Error while marking plays as submitted."
+                break
+            except Exception as exc:
+                logger.exception(f"Error while marking plays as submitted: {exc}")
+                err_msg = "Error while marking plays as submitted."
+                break
+
+            marked_plays.extend(unsubmitted_play_ids)
+            # Vague rate-limiting of requests to the Network API
+            sleep(1)
+
+        self.write({
+            "success": True,
+            "foundPlays": found_plays,
+            "scrobbledPlays": scrobbled_plays,
+            "markedPlays": marked_plays,
+            "message": err_msg,
+        })
+
+
 class ApiScrobble(_BaseJsonPostHandler):
     def _post(self, data):
         if "checkpoint" in data:
@@ -528,20 +621,20 @@ class ApiScrobble(_BaseJsonPostHandler):
         err_msg: Optional[str] = None
         for _ in range(0, 5):
             try:
-                plays = db.load_unsubmitted_plays_batch(checkpoint=checkpoint).get()
+                unsubmitted_plays = db.load_unsubmitted_plays_batch(checkpoint=checkpoint).get()
             except ActorRetrievalFailure as exc:
                 logger.exception(f"Error while retrieving unsubmitted plays: {exc}")
                 err_msg = "Error while retrieving unsubmitted plays."
                 break
 
-            if not plays:
+            if not unsubmitted_plays:
                 break
 
-            play_ids = tuple(map(lambda play: play.play_id, plays))
-            found_plays.extend(play_ids)
+            unsubmitted_play_ids = tuple(map(lambda play: play.play_id, unsubmitted_plays))
+            found_plays.extend(unsubmitted_play_ids)
 
             try:
-                network.submit_scrobbles(plays).get()
+                network.submit_scrobbles(unsubmitted_plays).get()
             except NetworkException as exc:
                 logger.exception(f"Network error while scrobbling plays: {exc}")
                 err_msg = "Network error while scrobbling plays."
@@ -551,10 +644,10 @@ class ApiScrobble(_BaseJsonPostHandler):
                 err_msg = "Error while scrobbling plays."
                 break
 
-            scrobbled_plays.extend(play_ids)
+            scrobbled_plays.extend(unsubmitted_play_ids)
 
             try:
-                db.mark_plays_submitted(play_ids).get()
+                db.mark_plays_submitted(unsubmitted_play_ids).get()
             except DbClientError as exc:
                 logger.exception(f"Error after successful scrobble: {exc}")
                 err_msg = "Error after successful scrobble."
@@ -568,7 +661,7 @@ class ApiScrobble(_BaseJsonPostHandler):
                 err_msg = "Error while marking plays as submitted."
                 break
 
-            marked_plays.extend(play_ids)
+            marked_plays.extend(unsubmitted_play_ids)
             # Vague rate-limiting of requests to the Network API
             sleep(1)
 

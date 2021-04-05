@@ -1,5 +1,5 @@
 declare module "wave-ui" {
-  import { App } from "@vue/runtime-core";
+  import { App, defineComponent } from "@vue/runtime-core";
   import { RouteLocationRaw } from "vue-router";
 
   export interface WaveUIConfigParam {
@@ -46,12 +46,20 @@ declare module "wave-ui" {
     align?: string;
   }
 
+  export interface TableRowSelectEvent<T = Record<string, unknown>> {
+    readonly item: T;
+    readonly selected: boolean;
+    readonly selectedRows: T[];
+  }
+
   export interface ListItem {
     label: string;
     value: string;
     color?: string;
     route?: RouteLocationRaw;
   }
+
+  export const WTable: ReturnType<typeof defineComponent>;
 
   export default class WaveUI {
     constructor(app: App, config?: WaveUIConfigParam);

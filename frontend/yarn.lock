@@ -8891,10 +8891,10 @@ watchpack@^1.7.4:
     chokidar "^3.4.1"
     watchpack-chokidar2 "^2.0.1"
 
-wave-ui@^2.15.0:
-  version "2.15.0"
-  resolved "https://registry.yarnpkg.com/wave-ui/-/wave-ui-2.15.0.tgz#7a36ee9f334b3fd3c600a08cf8acb6a9c821f4f5"
-  integrity sha512-8VSxJWOHI67cJu3HYRtx7eBjApaDTZG8C9HVIdrsELZ921RTVYMFE6y7AZ3FDsD5yY8Z6tavG6DESfkekRRcqQ==
+wave-ui@^2.16.0:
+  version "2.16.0"
+  resolved "https://registry.yarnpkg.com/wave-ui/-/wave-ui-2.16.0.tgz#8f3a0936f63f5b6b70265092de138b0a3fcd5d55"
+  integrity sha512-lHvCwYveI0TOu6kJ/xGZwOhOx7W8c0nOeay5Om9eyF2lkC38P+pzzbiouhuITMDWXy3297TFa0sEM3KcDtJlIA==
 
 wbuf@^1.1.0, wbuf@^1.7.3:
   version "1.7.3"

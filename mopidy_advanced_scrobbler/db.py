@@ -121,6 +121,27 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         else:
             return None
 
+    def find_plays(self, play_ids: Collection[int], *, only_unsubmitted: bool = False) -> Collection[RecordedPlay]:
+        play_ids = play_ids[:50]
+
+        conn = self._connect()
+
+        query_template = "SELECT * FROM plays WHERE play_id IN ({0})"
+        if only_unsubmitted:
+            query_template += " AND submitted_at IS NULL"
+        placeholders = ("?, " * len(play_ids))[:-2]  # remove the last ", "
+        query = query_template.format(placeholders)
+        args = play_ids
+
+        logger.debug("Executing DB query: %s", query)
+        cursor = conn.execute(query, args)
+
+        plays: List[RecordedPlay] = []
+        for row in cursor:
+            plays.append(RecordedPlay.from_dict(row))
+
+        return tuple(plays)
+
     def load_plays(
         self,
         *,
