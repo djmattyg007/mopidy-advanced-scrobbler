@@ -135,7 +135,9 @@
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
                     </li>
                     <li v-if="!item.submittedAt">
-                      <w-button text lg @click="scrobbleToCheckpoint(item)">Scrobble To Here</w-button>
+                      <w-button text lg @click="scrobbleToCheckpoint(item)"
+                        >Scrobble To Here</w-button
+                      >
                     </li>
                   </ul>
                 </w-menu>
@@ -546,7 +548,7 @@
       </template>
 
       <div v-if="scrobblingResponse">
-        <ol style="list-style: none;">
+        <ol style="list-style: none">
           <li>
             <span class="text-bold">Found Plays</span>:
             <span :class="{ error: scrobblingResponse.foundPlays.length === 0 }">{{
@@ -681,7 +683,7 @@ export default defineComponent({
         { label: "Actions", key: "actions", sortable: false, align: "right" },
       ];
 
-      if (!(this.$waveui.breakpoint.md)) {
+      if (!this.$waveui.breakpoint.md) {
         headers.splice(3, 0, { label: "Album", key: "album", sortable: false });
       }
 
