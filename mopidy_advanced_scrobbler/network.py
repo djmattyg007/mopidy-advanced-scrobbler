@@ -10,13 +10,6 @@ from ._service import Service
 logger = logging.getLogger(__name__)
 
 
-PYLAST_ERRORS = (
-    pylast.MalformedResponseError,
-    pylast.NetworkError,
-    pylast.WSError,
-)
-
-
 class NetworkException(Exception):
     pass
 
@@ -76,7 +69,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
                 password_hash=pylast.md5(self._config["password"])
             )
             logger.debug("Connected to Last.fm with username %s", self._config["username"])
-        except PYLAST_ERRORS as exc:
+        except pylast.PyLastError as exc:
             logger.exception(f"Error during Advanced-Scrobbler Last.fm setup: {exc}")
             raise
 
@@ -86,7 +79,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
         logger.info("Sending 'now playing' notification: %s", play.track_uri)
         try:
             self._network.update_now_playing(**now_playing_data)
-        except PYLAST_ERRORS as exc:
+        except pylast.PyLastError as exc:
             logger.exception(f"Error while sending now playing data to {self._network}: {exc}")
             raise NetworkException(f"Error while sending now playing data to {self._network}") from exc
 
@@ -96,7 +89,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
         logger.info("Submitting scrobble for play %d: %s", play.play_id, play.track_uri)
         try:
             self._network.scrobble(**play_data)
-        except PYLAST_ERRORS as exc:
+        except pylast.PyLastError as exc:
             logger.exception(f"Error while submitting scrobble to {self._network}: {exc}")
             raise NetworkException(f"Error while submitting scrobble to {self._network}") from exc
 
@@ -110,7 +103,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
         logger.info("Submitting scrobbles for plays: %s", ", ".join(map(str, play_ids)))
         try:
             self._network.scrobble_many(plays_data)
-        except PYLAST_ERRORS as exc:
+        except pylast.PyLastError as exc:
             logger.exception(f"Error while submitting scrobbles to {self._network}: {exc}")
             raise NetworkException(f"Error while submitting scrobbles to {self._network}") from exc
 
