@@ -1,6 +1,10 @@
 /build/
 /dist/
 /venv/
+
+/.coverage
+/.tox/
+
 *.egg-info
 *.pyc
 *.pyo

@@ -3,7 +3,6 @@ import pathlib
 import sqlite3
 from typing import Optional
 
-
 from mopidy_advanced_scrobbler.models import Correction, Play
 
 

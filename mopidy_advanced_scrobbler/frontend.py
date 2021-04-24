@@ -1,31 +1,37 @@
 from __future__ import annotations
 
 import logging
-import pykka
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urlparse
 
+import pykka
 from mopidy.core import CoreListener
 
-
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import Correction, prepare_play
 from mopidy_advanced_scrobbler.db import db_service
-from mopidy_advanced_scrobbler.network import network_service, NetworkException, NowPlayingData
+from mopidy_advanced_scrobbler.models import Correction, prepare_play
+from mopidy_advanced_scrobbler.network import NetworkException, network_service
+
 from ._service import ActorRetrievalFailure
 
 
 if TYPE_CHECKING:
     from mopidy.models import TlTrack, Track
-    from typing import Optional
 
 
 logger = logging.getLogger(__name__)
 
 
 class DebounceActor(pykka.ThreadingActor):
-    def __init__(self, debounce_id: str, wrapped: pykka.CallableProxy, timeout: int, *args, **kwargs):
+    def __init__(
+        self,
+        debounce_id: str,
+        wrapped: pykka.CallableProxy,
+        timeout: int,
+        *args,
+        **kwargs,
+    ):
         super().__init__()
 
         self.debounce_id = debounce_id
@@ -98,7 +104,13 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         if self._now_playing_notify_debouncer:
             self._now_playing_notify_debouncer.actor_ref.stop(block=False)
 
-        self._now_playing_notify_debouncer = DebounceActor.start(track.uri, self._proxy.debounced_now_playing_notify, 5, track).proxy()
+        # Debounce for 5 seconds
+        self._now_playing_notify_debouncer = DebounceActor.start(
+            track.uri,
+            self._proxy.debounced_now_playing_notify,
+            5,
+            track,
+        ).proxy()
 
     def debounced_now_playing_notify(self, track: Track):
         self._now_playing_notify_debouncer = None
@@ -114,7 +126,9 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             correction = None
             db_service.request_service_restart(self._global_config)
         except Exception as exc:
-            logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}")
+            logger.exception(
+                f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}"
+            )
             correction = None
 
         play = prepare_play(track, -1, correction)
@@ -134,7 +148,11 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             return
 
         time_position_sec = time_position / 1000
-        logger.debug("Advanced-Scrobbler track playback ended after %s: %s", int(time_position_sec), track.uri)
+        logger.debug(
+            "Advanced-Scrobbler track playback ended after %s: %s",
+            int(time_position_sec),
+            track.uri,
+        )
 
         db = None
         db_restart_future = None
@@ -147,12 +165,18 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             correction = None
             db_restart_future = db_service.request_service_restart(self._global_config)
         except Exception as exc:
-            logger.exception(f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}")
+            logger.exception(
+                f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}"
+            )
             correction = None
 
         play = prepare_play(track, int(time.time() - time_position_sec), correction)
         if play.duration < 30:
-            logger.debug("Advanced-Scrobbler track too short to scrobble (%d secs): %s", time_position_sec, track.uri)
+            logger.debug(
+                "Advanced-Scrobbler track too short to scrobble (%d secs): %s",
+                time_position_sec,
+                track.uri,
+            )
             return
 
         threshold = self.config["scrobble_time_threshold"] / 100
@@ -160,7 +184,9 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
         if time_position_sec < threshold_duration and time_position_sec < 240:
             logger.debug(
                 "Advanced-Scrobbler track not played long enough to scrobble (%d/%d secs): %s",
-                time_position_sec, play.duration, track.uri,
+                time_position_sec,
+                play.duration,
+                track.uri,
             )
             return
 
@@ -174,6 +200,6 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             db.record_play(play)
         except ActorRetrievalFailure as exc:
             logger.exception(f"Database connection found to be unavailable: {exc}")
-        except Exception as e:
-            logger.exception(f"Error while recording play for track with URI '{track.uri}: {e}")
+        except Exception as exc:
+            logger.exception(f"Error while recording play for track with URI '{track.uri}: {exc}")
             raise

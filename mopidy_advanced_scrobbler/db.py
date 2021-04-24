@@ -1,23 +1,29 @@
 from __future__ import annotations
 
-from enum import Enum
 import logging
-from pathlib import Path
-import pykka
 import sqlite3
+from enum import Enum
+from pathlib import Path
 from time import time as _time
 from typing import TYPE_CHECKING
 
+import pykka
+
 from ._service import Service
+
 
 if TYPE_CHECKING:
     from typing import Collection, List, Optional
 
-
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import Corrected
-from mopidy_advanced_scrobbler.models import Play, RecordedPlay, PlayEdit
-from mopidy_advanced_scrobbler.models import Correction, CorrectionEdit
+from mopidy_advanced_scrobbler.models import (
+    Corrected,
+    Correction,
+    CorrectionEdit,
+    Play,
+    PlayEdit,
+    RecordedPlay,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -97,7 +103,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 logger.info("Upgrading Advanced-Scrobbler SQLite database schema v%s", user_version)
                 filename = f"upgrade-v{user_version}.sql"
             else:
-                logger.info("Creating Advanced-Scrobbler SQLite database schema v%s", schema_version)
+                logger.info(
+                    "Creating Advanced-Scrobbler SQLite database schema v%s", schema_version
+                )
                 filename = "schema.sql"
 
             with open(self._sqlpath / filename) as fh:
@@ -106,7 +114,10 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             new_version = conn.execute("PRAGMA user_version").fetchone()["user_version"]
             assert new_version != user_version
             user_version = new_version
-            logger.info("Successfully upgraded Advanced-Scrobbler SQLite database schema to v%s", user_version)
+            logger.info(
+                "Successfully upgraded Advanced-Scrobbler SQLite database schema to v%s",
+                user_version,
+            )
 
     def find_play(self, play_id: int) -> Optional[RecordedPlay]:
         conn = self._connect()
@@ -121,7 +132,12 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         else:
             return None
 
-    def find_plays(self, play_ids: Collection[int], *, only_unsubmitted: bool = False) -> Collection[RecordedPlay]:
+    def find_plays(
+        self,
+        play_ids: Collection[int],
+        *,
+        only_unsubmitted: bool = False,
+    ) -> Collection[RecordedPlay]:
         play_ids = play_ids[:50]
 
         conn = self._connect()
@@ -165,7 +181,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
         return tuple(plays)
 
-    def load_unsubmitted_plays_batch(self, *, checkpoint: Optional[int] = None) -> Collection[RecordedPlay]:
+    def load_unsubmitted_plays_batch(
+        self, *, checkpoint: Optional[int] = None
+    ) -> Collection[RecordedPlay]:
         conn = self._connect()
 
         query = "SELECT * FROM plays WHERE submitted_at IS NULL"
@@ -197,7 +215,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
     def record_play(self, play: Play):
         query = """
             INSERT INTO plays (
-                track_uri, artist, title, album, orig_artist, orig_title, orig_album, corrected, musicbrainz_id, duration, played_at
+                track_uri, artist, title, album,
+                orig_artist, orig_title, orig_album,
+                corrected, musicbrainz_id, duration, played_at
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
@@ -227,12 +247,19 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         elif play_edit.track_uri != play.track_uri:
             raise DbClientError(f"Mismatched track URI for play with ID '{play_edit.play_id}'.")
         elif play.submitted_at:
-            raise DbClientError(f"The relevant play was already submitted and can no longer be updated.")
+            raise DbClientError(
+                "The relevant play was already submitted and can no longer be updated."
+            )
 
         with self._connect() as conn:
             conn.execute("BEGIN")
 
-            play_update_args = (play_edit.artist, play_edit.title, play_edit.album, Corrected.MANUALLY_CORRECTED)
+            play_update_args = (
+                play_edit.artist,
+                play_edit.title,
+                play_edit.album,
+                Corrected.MANUALLY_CORRECTED,
+            )
             if play_edit.update_all_unsubmitted:
                 play_update_query = """
                 UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ?
@@ -263,7 +290,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         if not isinstance(play, RecordedPlay):
             raise DbClientError(f"No play found with ID '{play_id}'.")
         elif play.submitted_at:
-            raise DbClientError("The relevant play was already submitted and can only be deleted through cleaning.")
+            raise DbClientError(
+                "The relevant play was already submitted and can only be deleted through cleaning."
+            )
 
         delete_query = "DELETE FROM plays WHERE play_id = ? AND submitted_at IS NULL"
         delete_args = (play_id,)
@@ -290,7 +319,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         elif play.submitted_at:
             raise DbClientError("The relevant play was already submitted.")
 
-        update_query = "UPDATE plays SET submitted_at = ? WHERE play_id = ? AND submitted_at IS NULL"
+        update_query = (
+            "UPDATE plays SET submitted_at = ? WHERE play_id = ? AND submitted_at IS NULL"
+        )
         update_args = (time(), play_id)
 
         with self._connect() as conn:
@@ -299,7 +330,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             return cursor.rowcount == 1
 
     def mark_plays_submitted(self, play_ids: Collection[int]):
-        update_query_template = "UPDATE plays SET submitted_at = ? WHERE submitted_at IS NULL AND play_id IN ({0})"
+        update_query_template = (
+            "UPDATE plays SET submitted_at = ? WHERE submitted_at IS NULL AND play_id IN ({0})"
+        )
         placeholders = ("?, " * len(play_ids))[:-2]  # remove the last ", "
         update_query = update_query_template.format(placeholders)
         update_args = (time(), *play_ids)
@@ -358,8 +391,15 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         with conn:
             conn.execute("BEGIN")
 
-            correction_update_query = "UPDATE corrections SET artist = ?, title = ?, album = ? WHERE track_uri = ?"
-            correction_update_args = (correction_edit.artist, correction_edit.title, correction_edit.album, correction.track_uri)
+            correction_update_query = (
+                "UPDATE corrections SET artist = ?, title = ?, album = ? WHERE track_uri = ?"
+            )
+            correction_update_args = (
+                correction_edit.artist,
+                correction_edit.title,
+                correction_edit.album,
+                correction.track_uri,
+            )
 
             logger.debug("Executing DB query: %s", correction_update_query)
             conn.execute(correction_update_query, correction_update_args)
@@ -369,7 +409,13 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ?
                 WHERE track_uri = ? AND submitted_at IS NULL
                 """
-                play_update_args = (correction_edit.artist, correction_edit.title, correction_edit.album, Corrected.MANUALLY_CORRECTED, correction.track_uri)
+                play_update_args = (
+                    correction_edit.artist,
+                    correction_edit.title,
+                    correction_edit.album,
+                    Corrected.MANUALLY_CORRECTED,
+                    correction.track_uri,
+                )
 
                 logger.debug("Executing DB query: %s", play_update_query)
                 conn.execute(play_update_query, play_update_args)
@@ -388,7 +434,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         if not isinstance(play, RecordedPlay):
             raise DbClientError(f"No play found with ID '{play_id}'.")
         elif play.corrected != Corrected.AUTO_CORRECTED:
-            raise DbClientError(f"The relevant play was not auto-corrected.")
+            raise DbClientError("The relevant play was not auto-corrected.")
 
         correction = self.find_correction(play.track_uri)
         if correction:

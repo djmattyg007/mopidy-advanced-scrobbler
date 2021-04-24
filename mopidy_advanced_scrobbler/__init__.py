@@ -42,19 +42,31 @@ class Extension(ext.Extension):
         registry.add("http:app", {"name": self.ext_name, "factory": self.factory_webapp})
 
     def factory_webapp(self, config, core):
-        from .web import OverrideStaticFileHandler, StaticFileHandler
-        from .web import ApiPlayDelete, ApiPlayDeleteMany, ApiPlayEdit, ApiPlayLoad, ApiPlaySubmit
-        from .web import ApiCorrectionDelete, ApiCorrectionEdit, ApiCorrectionLoad
-        from .web import ApiApproveAutoCorrection, ApiScrobble, ApiPlayScrobbleMany
+        from .web import (
+            ApiApproveAutoCorrection,
+            ApiCorrectionDelete,
+            ApiCorrectionEdit,
+            ApiCorrectionLoad,
+            ApiPlayDelete,
+            ApiPlayDeleteMany,
+            ApiPlayEdit,
+            ApiPlayLoad,
+            ApiPlayScrobbleMany,
+            ApiPlaySubmit,
+            ApiScrobble,
+            OverrideStaticFileHandler,
+            StaticFileHandler,
+        )
 
-        allowed_origins = {
-            origin.lower() for origin in config["http"]["allowed_origins"] if origin
-        }
+        allowed_origins = {origin.lower() for origin in config["http"]["allowed_origins"] if origin}
 
         path_static = pathlib.Path(__file__).parent / "static"
         path_page_file = path_static / "index.html"
 
-        api_args = {"allowed_origins": allowed_origins, "csrf_protection": config["http"]["csrf_protection"]}
+        api_args = {
+            "allowed_origins": allowed_origins,
+            "csrf_protection": config["http"]["csrf_protection"],
+        }
         vue_router_args = {"static_file_path": path_page_file}
 
         return [
@@ -72,7 +84,11 @@ class Extension(ext.Extension):
             (r"/api/corrections/delete", ApiCorrectionDelete, api_args),
             (r"/api/approve-auto", ApiApproveAutoCorrection, api_args),
             (r"/api/scrobble", ApiScrobble, api_args),
-            (r"/favicon\.png$", OverrideStaticFileHandler, {"static_file_path": path_static / "favicon.png"}),
+            (
+                r"/favicon\.png$",
+                OverrideStaticFileHandler,
+                {"static_file_path": path_static / "favicon.png"},
+            ),
             (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
             (r"/", OverrideStaticFileHandler, vue_router_args),
         ]

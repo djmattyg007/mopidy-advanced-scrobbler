@@ -1,18 +1,26 @@
 from __future__ import annotations
 
 import logging
-from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
 from time import sleep
+from typing import TYPE_CHECKING, List, Optional
+
 import tornado.escape
 import tornado.httputil
 import tornado.web
-from typing import TYPE_CHECKING, List, Optional
+from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
 
-from mopidy_advanced_scrobbler.db import db_service, SortDirectionEnum, DbClientError
-from mopidy_advanced_scrobbler.models import RecordedPlay, PlayEdit, CorrectionEdit
-from mopidy_advanced_scrobbler.models import correction_schema, recorded_play_schema
-from mopidy_advanced_scrobbler.network import network_service, NetworkException
+from mopidy_advanced_scrobbler.db import DbClientError, SortDirectionEnum, db_service
+from mopidy_advanced_scrobbler.models import (
+    CorrectionEdit,
+    PlayEdit,
+    RecordedPlay,
+    correction_schema,
+    recorded_play_schema,
+)
+from mopidy_advanced_scrobbler.network import NetworkException, network_service
+
 from ._service import ActorRetrievalFailure
+
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -42,9 +50,7 @@ class _BaseHandler(tornado.web.RequestHandler):
         self.set_extra_headers()
         if self.csrf_protection:
             origin = self.request.headers.get("Origin")
-            if not check_origin(
-                origin, self.request.headers, self.allowed_origins
-            ):
+            if not check_origin(origin, self.request.headers, self.allowed_origins):
                 self.set_status(403, f"Access denied for origin {origin}")
                 return
 
@@ -531,7 +537,7 @@ class ApiPlayScrobbleMany(_BaseJsonPostHandler):
         marked_plays: List[int] = []
         err_msg: Optional[str] = None
         for batch_start_id in range(0, 250, 50):
-            play_ids_batch = play_ids[batch_start_id:batch_start_id + 50]
+            play_ids_batch = play_ids[batch_start_id : batch_start_id + 50]
 
             try:
                 unsubmitted_plays = db.find_plays(play_ids_batch, only_unsubmitted=True).get()
@@ -578,13 +584,15 @@ class ApiPlayScrobbleMany(_BaseJsonPostHandler):
             # Vague rate-limiting of requests to the Network API
             sleep(1)
 
-        self.write({
-            "success": True,
-            "foundPlays": found_plays,
-            "scrobbledPlays": scrobbled_plays,
-            "markedPlays": marked_plays,
-            "message": err_msg,
-        })
+        self.write(
+            {
+                "success": True,
+                "foundPlays": found_plays,
+                "scrobbledPlays": scrobbled_plays,
+                "markedPlays": marked_plays,
+                "message": err_msg,
+            }
+        )
 
 
 class ApiScrobble(_BaseJsonPostHandler):
@@ -665,10 +673,12 @@ class ApiScrobble(_BaseJsonPostHandler):
             # Vague rate-limiting of requests to the Network API
             sleep(1)
 
-        self.write({
-            "success": True,
-            "foundPlays": found_plays,
-            "scrobbledPlays": scrobbled_plays,
-            "markedPlays": marked_plays,
-            "message": err_msg,
-        })
+        self.write(
+            {
+                "success": True,
+                "foundPlays": found_plays,
+                "scrobbledPlays": scrobbled_plays,
+                "markedPlays": marked_plays,
+                "message": err_msg,
+            }
+        )

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import pykka
-import time
 import threading
+import time
 from typing import TYPE_CHECKING
+
+import pykka
+
 
 if TYPE_CHECKING:
     from typing import Optional, Type
@@ -42,7 +44,7 @@ class Service(object):
         def waiter(timeout):
             thread.join(timeout=timeout)
             if thread.is_alive():
-                raise pykka.Timeout(f"Service restart timed out")
+                raise pykka.Timeout("Service restart timed out")
 
         future.set_get_hook(waiter)
         return future
@@ -58,16 +60,15 @@ class Service(object):
                 self._actor_stopped()
 
         if self._instance_dead:
-            future.set_exception((
-                pykka.ActorDeadError,
-                pykka.ActorDeadError(
-                    "{} ({}) was stopped".format(
-                        self.actor_class.__name__,
-                        self._instance_urn
-                    )
-                ),
-                None,
-            ))
+            future.set_exception(
+                (
+                    pykka.ActorDeadError,
+                    pykka.ActorDeadError(
+                        "{} ({}) was stopped".format(self.actor_class.__name__, self._instance_urn)
+                    ),
+                    None,
+                )
+            )
             return future
 
         def waiter(timeout):
@@ -76,10 +77,7 @@ class Service(object):
             while not self._instance:
                 if self._instance_dead:
                     raise pykka.ActorDeadError(
-                        '{} ({}) was stopped'.format(
-                            self.actor_class.__name__,
-                            self._instance_urn
-                        )
+                        "{} ({}) was stopped".format(self.actor_class.__name__, self._instance_urn)
                     )
 
                 elapsed = time.monotonic() - time_start

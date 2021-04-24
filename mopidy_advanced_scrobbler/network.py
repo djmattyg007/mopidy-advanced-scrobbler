@@ -1,9 +1,11 @@
 import logging
-import pykka
-import pylast
 from typing import Iterable, Optional, TypedDict
 
+import pykka
+import pylast
+
 from mopidy_advanced_scrobbler.models import Play
+
 from ._service import Service
 
 
@@ -33,7 +35,7 @@ def format_now_playing_data(play: Play) -> NowPlayingData:
     }
 
     if play.album:
-        data["album"] = play.album,
+        data["album"] = play.album
     if play.duration:
         data["duration"] = play.duration
     if play.musicbrainz_id:
@@ -66,7 +68,7 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
                 api_key=self._config["api_key"],
                 api_secret=self._config["api_secret"],
                 username=self._config["username"],
-                password_hash=pylast.md5(self._config["password"])
+                password_hash=pylast.md5(self._config["password"]),
             )
             logger.debug("Connected to Last.fm with username %s", self._config["username"])
         except pylast.PyLastError as exc:
@@ -81,7 +83,9 @@ class AdvancedScrobblerNetwork(pykka.ThreadingActor):
             self._network.update_now_playing(**now_playing_data)
         except pylast.PyLastError as exc:
             logger.exception(f"Error while sending now playing data to {self._network}: {exc}")
-            raise NetworkException(f"Error while sending now playing data to {self._network}") from exc
+            raise NetworkException(
+                f"Error while sending now playing data to {self._network}"
+            ) from exc
 
     def submit_scrobble(self, play: Play):
         play_data = format_play_data(play)

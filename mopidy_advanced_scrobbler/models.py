@@ -1,15 +1,13 @@
-from __future__ import annotations
-
 import dataclasses
-from dataclasses_json import dataclass_json, LetterCase
 from enum import IntEnum
-from music_metadata_filter.filter import MetadataFilter
-from music_metadata_filter.filters import make_remastered_filter
-from music_metadata_filter.opinionated_filters import make_spotify_filter
 from typing import Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
+from dataclasses_json import LetterCase, dataclass_json
 from mopidy.models import Track
+from music_metadata_filter.filter import MetadataFilter
+from music_metadata_filter.filters import make_remastered_filter
+from music_metadata_filter.opinionated_filters import make_spotify_filter
 
 
 metadata_filters_mapping: Mapping[str, MetadataFilter] = {
@@ -97,7 +95,9 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
         track_uri_parsed = urlparse(track_uri)
         metadata_filter = metadata_filters_mapping.get(track_uri_parsed.scheme, None)
         if metadata_filter:
-            artist, title, album, corrected = apply_metadata_filter(metadata_filter, orig_artist, orig_title, orig_album)
+            artist, title, album, corrected = apply_metadata_filter(
+                metadata_filter, orig_artist, orig_title, orig_album
+            )
         else:
             artist, title, album = orig_artist, orig_title, orig_album
             corrected = Corrected.NOT_CORRECTED
@@ -161,7 +161,12 @@ def format_track_data(track: Track) -> Tuple[str, str, str]:
     return artist, title, album
 
 
-def apply_metadata_filter(metadata_filter: MetadataFilter, orig_artist: str, orig_title: str, orig_album: str):
+def apply_metadata_filter(
+    metadata_filter: MetadataFilter,
+    orig_artist: str,
+    orig_title: str,
+    orig_album: str,
+):
     artist = metadata_filter.filter_field("artist", orig_artist)
     title = metadata_filter.filter_field("track", orig_title)
     album = metadata_filter.filter_field("album", orig_album)
