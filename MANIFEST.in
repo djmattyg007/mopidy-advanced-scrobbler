@@ -9,3 +9,5 @@ include mopidy_advanced_scrobbler/ext.conf
 
 recursive-include mopidy_advanced_scrobbler/sql *.sql
 recursive-include mopidy_advanced_scrobbler/static *
+
+recursive-include tests *.py
