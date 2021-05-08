@@ -8,13 +8,14 @@ line-length = 100
 
 
 [tool.isort]
+profile = "black"
 multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
+#include_trailing_comma = true
+#force_grid_wrap = 0
+#use_parentheses = true
+#ensure_newline_before_comments = true
 line_length = 100
 known_tests = "tests"
-sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,TESTS,LOCALFOLDER"
+#sections = "FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,TESTS,LOCALFOLDER"
 lines_after_imports = 2
-lines_between_sections = 1
+#lines_between_sections = 1
