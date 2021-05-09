@@ -5,7 +5,7 @@ import sqlite3
 from enum import Enum
 from pathlib import Path
 from time import time as _time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple, Union
 
 import pykka
 
@@ -254,7 +254,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         with self._connect() as conn:
             conn.execute("BEGIN")
 
-            play_update_args = (
+            play_update_args: Tuple[Union[str, int], ...] = (
                 play_edit.artist,
                 play_edit.title,
                 play_edit.album,
