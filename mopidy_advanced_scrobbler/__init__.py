@@ -1,7 +1,6 @@
 import pathlib
 
 import pkg_resources
-
 from mopidy import config, ext
 
 from ._config import Float as ConfigFloat
