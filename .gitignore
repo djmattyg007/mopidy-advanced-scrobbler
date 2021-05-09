@@ -3,7 +3,6 @@
 /venv/
 
 /.coverage
-/.tox/
 
 *.egg-info
 *.pyc
