@@ -4,7 +4,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 pushd frontend
-yarn run build --mode development
+if [[ "${CI}" == "true" ]]; then
+  yarn run build
+else
+  yarn run build --mode development
+fi
 popd
 
 rm -rf mopidy_advanced_scrobbler/static

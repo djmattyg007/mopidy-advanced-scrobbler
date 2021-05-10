@@ -63,4 +63,4 @@ jobs:
       - name: "Run linting"
         run: "yarn run lint"
       - name: "Run the build"
-        run: "yarn run build"
+        run: "yarn run build --mode development"
