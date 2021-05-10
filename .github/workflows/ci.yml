@@ -1,6 +1,6 @@
 name: CI
 
-on: [push, pull_request]
+on: ["push", "pull_request"]
 
 jobs:
   main:
@@ -14,8 +14,8 @@ jobs:
             python: "3.9"
 
     name: ${{ matrix.name }}
-    runs-on: ubuntu-20.04
-    container: ghcr.io/mopidy/ci:latest
+    runs-on: "ubuntu-20.04"
+    container: "ghcr.io/mopidy/ci:latest"
 
     steps:
       - uses: actions/checkout@v2
@@ -31,11 +31,37 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.python }}-pip-${{ hashFiles('setup.cfg') }}-${{ hashFiles('tasks.py') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.python }}-pip-
-      - run: python -m pip install pygobject
-      - run: python -m pip install .[dev]
-      - run: python -m invoke lint
+      - name: "Install mopidy system dependencies"
+        run: "python -m pip install pygobject"
+      - name: "Install package dependencies"
+        run: "python -m pip install .[dev]"
+      - name: "Run linting"
+        run: "python -m invoke lint"
       # Not ready yet
-      #- run: python -m invoke type-check
-      - run: python -m invoke test
+      #- name: Run type checking
+      #  run: python -m invoke type-check
+      - name: "Run tests"
+        run: python -m invoke test
       - uses: codecov/codecov-action@v1
         if: ${{ matrix.coverage }}
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-20.04
+    container: ghcr.io/mopidy/ci:latest
+
+    defaults:
+      run:
+        working-directory: "./frontend"
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: "Install frontend dependencies"
+        run: "yarn install"
+      - name: "Run linting"
+        run: "yarn run lint"
+      - name: "Run the build"
+        run: "yarn run build"

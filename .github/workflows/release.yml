@@ -1,7 +1,7 @@
 name: Release
 on:
   release:
-    types: [published]
+    types: ["published"]
 
 jobs:
   release:
@@ -9,13 +9,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "14"
+      - name: "Install frontend dependencies"
+        run: yarn install
+        working-directory: "./frontend"
+      - name: "Prepare compiled frontend code"
+        run: "scripts/build-static.sh"
       - uses: actions/setup-python@v2
         with:
           python-version: "3.9"
-      - name: "Install dependencies"
-        run: python3 -m pip install build
+      - name: "Install build package"
+        run: "python3 -m pip install build"
       - name: "Build package"
-        run: python3 -m build
+        run: "python3 -m build"
       - uses: pypa/gh-action-pypi-publish@v1.4.2
         with:
           user: __token__
