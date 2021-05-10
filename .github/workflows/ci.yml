@@ -48,7 +48,6 @@ jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-20.04
-    container: ghcr.io/mopidy/ci:latest
 
     defaults:
       run:
