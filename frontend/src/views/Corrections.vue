@@ -129,7 +129,7 @@
         @submit="submitEditForm"
       >
         <w-input
-          v-model.trim="correctionEdit.title"
+          v-model="correctionEdit.title"
           class="d-flex mb4"
           label="Title"
           :readonly="editFormSubmitting"
@@ -137,7 +137,7 @@
         />
 
         <w-input
-          v-model.trim="correctionEdit.artist"
+          v-model="correctionEdit.artist"
           class="d-flex mb4"
           label="Artist"
           :readonly="editFormSubmitting"
@@ -145,7 +145,7 @@
         />
 
         <w-input
-          v-model.trim="correctionEdit.album"
+          v-model="correctionEdit.album"
           class="d-flex mb4"
           label="Album"
           :readonly="editFormSubmitting"

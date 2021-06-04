@@ -210,7 +210,7 @@
         @submit="submitEditForm"
       >
         <w-input
-          v-model.trim="playEdit.title"
+          v-model="playEdit.title"
           class="d-flex mb4"
           label="Title"
           :readonly="editFormSubmitting"
@@ -218,7 +218,7 @@
         />
 
         <w-input
-          v-model.trim="playEdit.artist"
+          v-model="playEdit.artist"
           class="d-flex mb4"
           label="Artist"
           :readonly="editFormSubmitting"
@@ -226,7 +226,7 @@
         />
 
         <w-input
-          v-model.trim="playEdit.album"
+          v-model="playEdit.album"
           class="d-flex mb4"
           label="Album"
           :readonly="editFormSubmitting"

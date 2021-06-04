@@ -255,9 +255,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             conn.execute("BEGIN")
 
             play_update_args: Tuple[Union[str, int], ...] = (
-                play_edit.artist,
-                play_edit.title,
-                play_edit.album,
+                play_edit.artist.strip(),
+                play_edit.title.strip(),
+                play_edit.album.strip(),
                 Corrected.MANUALLY_CORRECTED,
             )
             if play_edit.update_all_unsubmitted:
@@ -395,9 +395,9 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 "UPDATE corrections SET artist = ?, title = ?, album = ? WHERE track_uri = ?"
             )
             correction_update_args = (
-                correction_edit.artist,
-                correction_edit.title,
-                correction_edit.album,
+                correction_edit.artist.strip(),
+                correction_edit.title.strip(),
+                correction_edit.album.strip(),
                 correction.track_uri,
             )
 
