@@ -4,6 +4,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-scripts/build-static.sh
+CI=false scripts/build-static.sh
 
 python setup.py install

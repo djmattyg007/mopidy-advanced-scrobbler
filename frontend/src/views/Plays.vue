@@ -106,7 +106,7 @@
             class="bd0"
             @row-select="updateMultiSelectPlays"
           >
-            <template #item="{ item, label, header }">
+            <template #item-cell="{ item, label, header }">
               <template v-if="header.key === 'actions'">
                 <w-button
                   v-if="!item.submittedAt"
@@ -669,6 +669,8 @@ export default defineComponent({
       scrobblingOverlay: false,
       scrobblingResponse: null as ScrobbleResponse | null,
       dialogScrobbleSuccessShow: false,
+
+      selectedRows: [],
     };
   },
   computed: {
