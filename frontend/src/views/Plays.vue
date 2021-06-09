@@ -108,14 +108,6 @@
           >
             <template #item-cell="{ item, label, header }">
               <template v-if="header.key === 'actions'">
-                <w-button
-                  v-if="!item.submittedAt"
-                  class="ml1"
-                  bg-color="secondary"
-                  lg
-                  @click="editPlay(item)"
-                  >Edit</w-button
-                >
                 <w-menu left hide-on-menu-click>
                   <template #activator="{ on }">
                     <w-button class="ml1" v-on="on" bg-color="secondary" lg>Menu</w-button>
@@ -123,13 +115,16 @@
 
                   <ul class="menu-list">
                     <li v-if="!item.submittedAt">
-                      <w-button text lg @click="submitPlay(item)">Submit</w-button>
+                      <w-button text lg @click="editPlay(item)">Edit</w-button>
                     </li>
                     <li v-if="item.corrected === 2">
                       <!-- IF auto-corrected -->
                       <w-button text lg @click="approveAutoCorrection(item)"
                         >Approve Auto-Correction</w-button
                       >
+                    </li>
+                    <li v-if="!item.submittedAt">
+                      <w-button text lg @click="submitPlay(item)">Submit</w-button>
                     </li>
                     <li v-if="!item.submittedAt">
                       <w-button text lg @click="deletePlay(item)">Delete</w-button>
