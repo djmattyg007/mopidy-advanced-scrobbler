@@ -13,6 +13,7 @@
     "core-js": "^3.13.1",
     "luxon": "^1.27.0",
     "vue": "^3.0.11",
+    "vue-concurrency": "^2.0.3",
     "vue-promised": "^2.0.3",
     "vue-router": "^4.0.8",
     "vuex": "^4.0.1",

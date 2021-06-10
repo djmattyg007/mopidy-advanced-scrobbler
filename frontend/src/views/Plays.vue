@@ -3,181 +3,181 @@
     <h1>Plays</h1>
     <br />
 
-    <Promised :promise="plays">
-      <template #combined="{ isPending, data, error }">
-        <w-card class="mb10" content-class="pa0">
-          <template #title>
-            <w-toolbar class="px2">
-              <span v-if="data && data.counts.overall >= 0">
-                <span class="text-bold">{{ data.counts.overall }}</span> plays
-                <span class="text-bold">({{ data.counts.unsubmitted }}</span> unsubmitted)
-              </span>
+    <w-card class="mb10" content-class="pa0">
+      <template #title>
+        <w-toolbar class="px2">
+          <span v-if="plays.value && plays.value.counts.overall >= 0">
+            <span class="text-bold">{{ plays.value.counts.overall }}</span> plays
+            <span class="text-bold">({{ plays.value.counts.unsubmitted }}</span> unsubmitted)
+          </span>
 
-              <div class="spacer"></div>
+          <div class="spacer"></div>
 
-              <w-button
-                icon="mdi mdi-skip-backward"
-                text
-                lg
-                class="mx1"
-                aria-label="First Page"
-                :disabled="isPending || isFirstPage"
-                @click="goToFirstPage"
-              />
-              <w-button
-                icon="mdi mdi-step-backward"
-                text
-                lg
-                class="mx1"
-                aria-label="Previous Page"
-                :disabled="isPending || isFirstPage"
-                @click="goToPreviousPage"
-              />
-              <span class="mx2 text-bold">{{ pageNumber }}</span>
-              <w-button
-                icon="mdi mdi-step-forward"
-                text
-                lg
-                class="mx1"
-                aria-label="Next Page"
-                :disabled="isPending || !data || data.plays.length < pageSize"
-                @click="goToNextPage"
-              />
+          <w-button
+            icon="mdi mdi-skip-backward"
+            text
+            lg
+            class="mx1"
+            aria-label="First Page"
+            :disabled="plays.isRunning || isFirstPage"
+            @click="goToFirstPage"
+          />
+          <w-button
+            icon="mdi mdi-step-backward"
+            text
+            lg
+            class="mx1"
+            aria-label="Previous Page"
+            :disabled="plays.isRunning || isFirstPage"
+            @click="goToPreviousPage"
+          />
+          <span class="mx2 text-bold">{{ pageNumber }}</span>
+          <w-button
+            icon="mdi mdi-step-forward"
+            text
+            lg
+            class="mx1"
+            aria-label="Next Page"
+            :disabled="plays.isRunning || !plays.value || plays.value.plays.length < pageSize"
+            @click="goToNextPage"
+          />
 
-              <div class="spacer"></div>
+          <div class="spacer"></div>
 
-              <w-button
-                icon="mdi mdi-delete-forever"
-                text
-                lg
-                class="ml3"
-                aria-label="Delete Selected"
-                title="Delete Selected"
-                :disabled="isPending || deleteRequestSubmitting || !canDeleteMultiSelection"
-                @click="deleteMultiSelected"
-              ></w-button>
-              <w-button
-                icon="mdi mdi-upload"
-                text
-                lg
-                class="ml3"
-                aria-label="Scrobble Selected"
-                title="Scrobble Selected"
-                :disabled="isPending || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
-                @click="scrobbleMultiSelected"
-              ></w-button>
-              <w-button
-                icon="mdi mdi-auto-upload"
-                text
-                lg
-                class="ml3"
-                aria-label="Scrobble Unsubmitted"
-                title="Scrobble Unsubmitted"
-                :disabled="isPending || scrobbleRequestSubmitting"
-                @click="scrobbleUnsubmitted"
-              ></w-button>
-              <w-button
-                icon="mdi mdi-refresh"
-                text
-                lg
-                class="ml3"
-                aria-label="Refresh List"
-                title="Refresh List"
-                :disabled="isPending"
-                @click="refresh"
-              ></w-button>
-            </w-toolbar>
-          </template>
-
-          <w-table v-if="error" :headers="headers" :items="[]" :mobile-breakpoint="900" class="bd0">
-            <template #no-data>
-              <p>An error occurred while fetching data.</p>
-              <br />
-              <p>{{ error }}</p>
-            </template>
-          </w-table>
-          <w-table
-            v-else
-            :headers="headers"
-            :items="data ? data.plays : []"
-            :selectable-rows="true"
-            :loading="isPending"
-            :mobile-breakpoint="900"
-            class="bd0"
-            @row-select="updateMultiSelectPlays"
-          >
-            <template #item-cell="{ item, label, header }">
-              <template v-if="header.key === 'actions'">
-                <w-menu left hide-on-menu-click>
-                  <template #activator="{ on }">
-                    <w-button class="ml1" v-on="on" bg-color="secondary" lg>Menu</w-button>
-                  </template>
-
-                  <ul class="menu-list">
-                    <li v-if="!item.submittedAt">
-                      <w-button text lg @click="editPlay(item)">Edit</w-button>
-                    </li>
-                    <li v-if="item.corrected === 2">
-                      <!-- IF auto-corrected -->
-                      <w-button text lg @click="approveAutoCorrection(item)"
-                        >Approve Auto-Correction</w-button
-                      >
-                    </li>
-                    <li v-if="!item.submittedAt">
-                      <w-button text lg @click="submitPlay(item)">Submit</w-button>
-                    </li>
-                    <li v-if="!item.submittedAt">
-                      <w-button text lg @click="deletePlay(item)">Delete</w-button>
-                    </li>
-                    <li v-if="!item.submittedAt">
-                      <w-button text lg @click="scrobbleToCheckpoint(item)"
-                        >Scrobble To Here</w-button
-                      >
-                    </li>
-                  </ul>
-                </w-menu>
-              </template>
-              <template v-else-if="header.key === 'corrected'">
-                <template v-if="[1, 2].includes(item.corrected)">
-                  <w-tooltip :detach-to="true">
-                    <template #activator="{ on }">
-                      <corrected-label v-on="on" :value="item.corrected" />
-                    </template>
-
-                    <dl>
-                      <dt>Orig. Artist</dt>
-                      <dd>{{ item.origArtist }}</dd>
-
-                      <dt>Orig. Title</dt>
-                      <dd>{{ item.origTitle }}</dd>
-
-                      <dt>Orig. Album</dt>
-                      <dd>{{ item.origAlbum }}</dd>
-                    </dl>
-                  </w-tooltip>
-                </template>
-                <template v-else>
-                  <corrected-label :value="item.corrected" />
-                </template>
-              </template>
-              <template v-else-if="header.key === 'playedAt'">
-                <unix-timestamp :value="item.playedAt" />
-              </template>
-              <template v-else-if="header.key === 'submittedAt'">
-                <span>
-                  <w-icon v-if="item.submittedAt" xl color="green">mdi mdi-check</w-icon>
-                </span>
-              </template>
-              <template v-else>
-                <span>{{ label }}</span>
-              </template>
-            </template>
-          </w-table>
-        </w-card>
+          <w-button
+            icon="mdi mdi-delete-forever"
+            text
+            lg
+            class="ml3"
+            aria-label="Delete Selected"
+            title="Delete Selected"
+            :disabled="plays.isRunning || deleteRequestSubmitting || !canDeleteMultiSelection"
+            @click="deleteMultiSelected"
+          ></w-button>
+          <w-button
+            icon="mdi mdi-upload"
+            text
+            lg
+            class="ml3"
+            aria-label="Scrobble Selected"
+            title="Scrobble Selected"
+            :disabled="plays.isRunning || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
+            @click="scrobbleMultiSelected"
+          ></w-button>
+          <w-button
+            icon="mdi mdi-auto-upload"
+            text
+            lg
+            class="ml3"
+            aria-label="Scrobble Unsubmitted"
+            title="Scrobble Unsubmitted"
+            :disabled="plays.isRunning || scrobbleRequestSubmitting"
+            @click="scrobbleUnsubmitted"
+          ></w-button>
+          <w-button
+            icon="mdi mdi-refresh"
+            text
+            lg
+            class="ml3"
+            aria-label="Refresh List"
+            title="Refresh List"
+            :disabled="plays.isRunning"
+            @click="refresh"
+          ></w-button>
+        </w-toolbar>
       </template>
-    </Promised>
 
-    <w-dialog
+      <w-table
+        v-if="plays.error"
+        :headers="headers"
+        :items="[]"
+        :mobile-breakpoint="900"
+        class="bd0"
+      >
+        <template #no-data>
+          <p>An error occurred while fetching data.</p>
+          <br />
+          <p>{{ plays.error }}</p>
+        </template>
+      </w-table>
+      <w-table
+        v-else
+        :headers="headers"
+        :items="plays.value ? plays.value.plays : []"
+        :selectable-rows="true"
+        v-model:selected-rows="selectedRows"
+        :loading="plays.isRunning"
+        :mobile-breakpoint="900"
+        class="bd0"
+      >
+        <template #item-cell="{ item, label, header }">
+          <template v-if="header.key === 'actions'">
+            <w-menu left hide-on-menu-click>
+              <template #activator="{ on }">
+                <w-button class="ml1" v-on="on" bg-color="secondary" lg>Menu</w-button>
+              </template>
+
+              <ul class="menu-list">
+                <li v-if="!item.submittedAt">
+                  <w-button text lg @click="editPlay(item)">Edit</w-button>
+                </li>
+                <li v-if="item.corrected === 2">
+                  <!-- IF auto-corrected -->
+                  <w-button text lg @click="approveAutoCorrection(item)"
+                    >Approve Auto-Correction</w-button
+                  >
+                </li>
+                <li v-if="!item.submittedAt">
+                  <w-button text lg @click="submitPlay(item)">Submit</w-button>
+                </li>
+                <li v-if="!item.submittedAt">
+                  <w-button text lg @click="deletePlay(item)">Delete</w-button>
+                </li>
+                <li v-if="!item.submittedAt">
+                  <w-button text lg @click="scrobbleToCheckpoint(item)">Scrobble To Here</w-button>
+                </li>
+              </ul>
+            </w-menu>
+          </template>
+          <template v-else-if="header.key === 'corrected'">
+            <template v-if="[1, 2].includes(item.corrected)">
+              <w-tooltip :detach-to="true">
+                <template #activator="{ on }">
+                  <corrected-label v-on="on" :value="item.corrected" />
+                </template>
+
+                <dl>
+                  <dt>Orig. Artist</dt>
+                  <dd>{{ item.origArtist }}</dd>
+
+                  <dt>Orig. Title</dt>
+                  <dd>{{ item.origTitle }}</dd>
+
+                  <dt>Orig. Album</dt>
+                  <dd>{{ item.origAlbum }}</dd>
+                </dl>
+              </w-tooltip>
+            </template>
+            <template v-else>
+              <corrected-label :value="item.corrected" />
+            </template>
+          </template>
+          <template v-else-if="header.key === 'playedAt'">
+            <unix-timestamp :value="item.playedAt" />
+          </template>
+          <template v-else-if="header.key === 'submittedAt'">
+            <span>
+              <w-icon v-if="item.submittedAt" xl color="green">mdi mdi-check</w-icon>
+            </span>
+          </template>
+          <template v-else>
+            <span>{{ label }}</span>
+          </template>
+        </template>
+      </w-table>
+    </w-card>
+
+    <!--w-dialog
       v-model="dialogEditShow"
       title-class="primary-light1--bg white"
       width="400px"
@@ -528,13 +528,13 @@
           >Confirm</w-button
         >
       </template>
-    </w-dialog>
+    </w-dialog-->
 
     <w-overlay v-model="scrobblingOverlay" :persistent="true" :opacity="0.5">
       <w-progress class="ma1" circle color="green" size="96" />
     </w-overlay>
 
-    <w-dialog v-model="dialogScrobbleSuccessShow" title-class="success-light2--bg" width="400px">
+    <!--w-dialog v-model="dialogScrobbleSuccessShow" title-class="success-light2--bg" width="400px">
       <template #title>
         <w-icon class="mr2">mdi mdi-check-circle</w-icon>
         Success
@@ -583,11 +583,246 @@
           >Close</w-button
         >
       </template>
-    </w-dialog>
+    </w-dialog-->
   </main>
 </template>
 
 <script lang="ts">
+import { defineComponent, computed, reactive, ref, Ref } from "vue";
+import { useAsyncTask } from "vue-concurrency";
+import type { TableHeader } from "wave-ui";
+// @ts-ignore
+import type { Play, Corrected } from "@/types";
+
+import { api } from "@/api";
+
+import CorrectedLabel from "@/components/CorrectedLabel.vue";
+import UnixTimestamp from "@/components/UnixTimestamp.vue";
+
+interface LoadPlaysResponse {
+  readonly plays: ReadonlyArray<Play>;
+  readonly counts: {
+    readonly overall: number;
+    readonly unsubmitted: number;
+  };
+}
+
+/*interface ScrobbleResponse {
+  readonly success: boolean;
+  readonly foundPlays: ReadonlyArray<number>;
+  readonly scrobbledPlays: ReadonlyArray<number>;
+  readonly markedPlays: ReadonlyArray<number>;
+  readonly message: string | null;
+}*/
+
+interface EditablePlay {
+  readonly playId: number;
+  readonly trackUri: string;
+  title: string;
+  artist: string;
+  album: string;
+  saveCorrection: boolean;
+  updateAllUnsubmitted: boolean;
+}
+
+export default defineComponent({
+  name: "PlaysView",
+  components: {
+    CorrectedLabel,
+    UnixTimestamp,
+  },
+  setup(props, ctx) {
+    const pageNumber = ref(1);
+    const pageSize = ref(50);
+
+    const selectedPlay = ref(null) as Ref<Play | null>;
+    const playEdit = ref(null) as Ref<EditablePlay | null>;
+
+    const dialogShow = reactive({
+      edit: false,
+      approveAutoCorrection: false,
+      delete: false,
+      submit: false,
+      scrobble: false,
+      multiDelete: false,
+      multiScrobble: false,
+    });
+
+    const headers = computed((): TableHeader[] => {
+      const headers = [
+        { label: "ID", key: "playId", sortable: false },
+        { label: "Title", key: "title", sortable: false },
+        { label: "Artist", key: "artist", sortable: false },
+        { label: "Corrected", key: "corrected", sortable: false, align: "center" },
+        { label: "Played At", key: "playedAt", sortable: false },
+        { label: "Submitted", key: "submittedAt", sortable: false, align: "center" },
+        { label: "Actions", key: "actions", sortable: false, align: "right" },
+      ];
+
+      //if (!this.$waveui.breakpoint.md) {
+      headers.splice(3, 0, { label: "Album", key: "album", sortable: false });
+      //}
+
+      return headers;
+    });
+
+    const isFirstPage = computed((): boolean => pageNumber.value === 1);
+
+    const retrievePlays = async (): Promise<LoadPlaysResponse> => {
+      const response = await api.get<LoadPlaysResponse>("/plays/load", {
+        params: {
+          page: pageNumber.value,
+          page_size: pageSize.value,
+        },
+      });
+      return response.data;
+    };
+    const retrievePlaysTask = useAsyncTask((): ReturnType<typeof retrievePlays> => {
+      return retrievePlays();
+    }).drop();
+    const plays = ref(retrievePlaysTask.perform());
+    const loadPlays = (): void => {
+      plays.value = retrievePlaysTask.perform();
+    };
+
+    const selectedRows = ref([]) as Ref<number[]>;
+    const playsMultiSelected = computed((): boolean => selectedRows.value.length > 0);
+    const multiSelectPlays = computed((): ReadonlyArray<Play> => {
+      const playsData = plays.value.value;
+      if (!playsData) {
+        return [];
+      }
+
+      const selectedPlays: Play[] = [];
+
+      for (const selectedRowNum of selectedRows.value) {
+        selectedPlays.push(playsData.plays[selectedRowNum]);
+      }
+
+      return selectedPlays;
+    });
+    const canDeleteMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
+    const canScrobbleMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
+    const playsMultiSelectedCountLabel = computed((): string => {
+      const count = selectedRows.value.length;
+      if (count === 1) {
+        return `${count} play`;
+      } else {
+        return `${count} plays`;
+      }
+    });
+
+    const goToNextPage = (): void => {
+      pageNumber.value += 1;
+      loadPlays();
+    };
+    const goToPreviousPage = (): void => {
+      const currentPage = pageNumber.value;
+      if (currentPage === 1) {
+        return;
+      }
+
+      pageNumber.value = currentPage - 1;
+      loadPlays();
+    };
+    const goToFirstPage = (): void => {
+      pageNumber.value = 1;
+      loadPlays();
+    };
+    const refresh = (): void => {
+      pageNumber.value = 1;
+      loadPlays();
+    };
+
+    const editPlay = (play: Play): void => {
+      selectedPlay.value = play;
+      playEdit.value = {
+        playId: play.playId,
+        trackUri: play.trackUri,
+        title: play.title,
+        artist: play.artist,
+        album: play.album,
+        saveCorrection: true,
+        updateAllUnsubmitted: true,
+      };
+      dialogShow.edit = true;
+    };
+    const approveAutoCorrection = (play: Play): void => {
+      selectedPlay.value = play;
+      dialogShow.approveAutoCorrection = true;
+    };
+    const deletePlay = (play: Play): void => {
+      selectedPlay.value = play;
+      dialogShow.delete = true;
+    };
+    const submitPlay = (play: Play): void => {
+      selectedPlay.value = play;
+      dialogShow.submit = true;
+    };
+    const scrobbleToCheckpoint = (play: Play): void => {
+      selectedPlay.value = play;
+      dialogShow.scrobble = true;
+    };
+
+    const scrobbleUnsubmitted = (): void => {
+      dialogShow.scrobble = true;
+    };
+    const deleteMultiSelected = (): void => {
+      if (canDeleteMultiSelection.value === true) {
+        dialogShow.multiDelete = true;
+      } else {
+        alert("Invalid selection - must select only deleteable plays.");
+      }
+    };
+    const scrobbleMultiSelected = (): void => {
+      if (canScrobbleMultiSelection.value === true) {
+        dialogShow.multiScrobble = true;
+      } else {
+        alert("Invalid selection - must select only submittable plays.");
+      }
+    };
+
+    const scrobblingOverlay = ref(false);
+    const deleteRequestSubmitting = ref(false);
+    const scrobbleRequestSubmitting = ref(false);
+
+    return {
+      pageNumber,
+      pageSize,
+      selectedPlay,
+      playEdit,
+      dialogShow,
+      headers,
+      isFirstPage,
+      plays,
+      selectedRows,
+      playsMultiSelected,
+      multiSelectPlays,
+      canDeleteMultiSelection,
+      canScrobbleMultiSelection,
+      playsMultiSelectedCountLabel,
+      goToNextPage,
+      goToPreviousPage,
+      goToFirstPage,
+      refresh,
+      editPlay,
+      approveAutoCorrection,
+      deletePlay,
+      submitPlay,
+      scrobbleToCheckpoint,
+      scrobbleUnsubmitted,
+      deleteMultiSelected,
+      scrobbleMultiSelected,
+
+      scrobblingOverlay,
+      deleteRequestSubmitting,
+      scrobbleRequestSubmitting,
+    };
+  },
+});
+</script>
+
+<!--script lang="ts">
 import { defineComponent } from "vue";
 import { Promised } from "vue-promised";
 import type { TableHeader, TableRowSelectEvent } from "wave-ui";
@@ -1204,4 +1439,4 @@ export default defineComponent({
     },
   },
 });
-</script>
+</script-->
