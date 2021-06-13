@@ -2,7 +2,7 @@
   <main>
     <n-h1>Plays</n-h1>
 
-    <n-card :content-style="cardContentStyle">
+    <n-card :header-style="cardHeaderStyle" :content-style="cardContentStyle">
       <template #header>
         <n-element class="mas-toolbar">
           <span v-if="plays.value && plays.value.counts.overall >= 0">
@@ -107,12 +107,13 @@
 
       <template v-if="plays.error">
         <p>{{ plays.error }}</p>
-        <n-data-table :columns="columns" :data="[]" />
+        <n-data-table :columns="columns" :data="[]" table-layout="fixed" />
       </template>
       <n-data-table
         v-else
         :columns="columns"
         :data="plays.value ? plays.value.plays : []"
+         table-layout="fixed"
         :row-key="(row) => row.playId"
         v-model:checked-row-keys="selectedRowKeys"
         :loading="plays.isRunning"
@@ -212,6 +213,7 @@ export default defineComponent({
           title: "ID",
           key: "playId",
           sorter: false,
+          width: 85,
         },
         {
           title: "Title",
@@ -232,6 +234,7 @@ export default defineComponent({
           title: "Corrected",
           key: "corrected",
           sorter: false,
+          width: 110,
           align: "center",
           render(row) {
             const play = row as unknown as Play;
@@ -263,6 +266,7 @@ export default defineComponent({
           title: "Played At",
           key: "playedAt",
           sorter: false,
+          width: 175,
           render(row) {
             const play = row as unknown as Play;
             return h(UnixTimestamp, { value: play.playedAt });
@@ -272,6 +276,7 @@ export default defineComponent({
           title: "Submitted",
           key: "submittedAt",
           sorter: false,
+          width: 100,
           align: "center",
           render(row) {
             const play = row as unknown as Play;
@@ -423,6 +428,9 @@ export default defineComponent({
     const deleteRequestSubmitting = ref(false);
     const scrobbleRequestSubmitting = ref(false);
 
+    const cardHeaderStyle = {
+      "--padding-left": "12px",
+    };
     const cardContentStyle = {
       "--padding-left": "0",
       "--padding-right": "0",
@@ -441,8 +449,8 @@ export default defineComponent({
       //dialogShow,
       columns,
       isFirstPage,
-      plays,
       selectedRowKeys,
+      plays,
       playsMultiSelected,
       multiSelectPlays,
       canDeleteMultiSelection,
@@ -465,6 +473,7 @@ export default defineComponent({
       deleteRequestSubmitting,
       scrobbleRequestSubmitting,
 
+      cardHeaderStyle, // Doesn't currently work
       cardContentStyle,
 
       buttonIconSize,

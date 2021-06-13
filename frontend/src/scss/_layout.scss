@@ -5,5 +5,5 @@
 }
 
 .content-wrap {
-  padding: 16px;
+  padding: 16px var(--side-padding, 32px);
 }
