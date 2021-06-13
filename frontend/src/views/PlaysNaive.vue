@@ -233,30 +233,26 @@ export default defineComponent({
           key: "corrected",
           sorter: false,
           align: "center",
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           render(row) {
-            if (row.corrected === Corrected.NOT_CORRECTED) {
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              return h(CorrectedLabel, { value: row.corrected });
+            const play = row as unknown as Play;
+
+            if (play.corrected === Corrected.NOT_CORRECTED) {
+              return h(CorrectedLabel, { value: play.corrected });
             }
 
             return h(
               NTooltip,
               { placement: "bottom", trigger: "hover" },
               {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                trigger: () => h(CorrectedLabel, { value: row.corrected }),
+                trigger: () => h(CorrectedLabel, { value: play.corrected }),
                 default: () => {
                   return h("dl", [
                     h("dt", "Orig. Title"),
-                    h("dd", `${row.origTitle}`),
+                    h("dd", play.origTitle),
                     h("dt", "Orig. Artist"),
-                    h("dd", `${row.origArtist}`),
+                    h("dd", play.origArtist),
                     h("dt", "Orig. Album"),
-                    h("dd", `${row.origAlbum}`),
+                    h("dd", play.origAlbum),
                   ]);
                 },
               },
@@ -267,12 +263,9 @@ export default defineComponent({
           title: "Played At",
           key: "playedAt",
           sorter: false,
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           render(row) {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            return h(UnixTimestamp, { value: row.playedAt });
+            const play = row as unknown as Play;
+            return h(UnixTimestamp, { value: play.playedAt });
           },
         },
         {
@@ -280,16 +273,14 @@ export default defineComponent({
           key: "submittedAt",
           sorter: false,
           align: "center",
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
           render(row) {
+            const play = row as unknown as Play;
+
             const spanChildren = [];
-            if (row.submittedAt) {
+            if (play.submittedAt) {
               spanChildren.push(h(IconTick, { color: "green", size: 20 }));
             }
 
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
             return h("span", spanChildren);
           }
         },
