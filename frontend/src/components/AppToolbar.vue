@@ -21,7 +21,7 @@ export default defineComponent({
         key: "corrections",
         disabled: true,
         //urlPath: "/corrections",
-      }
+      },
     ];
 
     return { menuOptions };

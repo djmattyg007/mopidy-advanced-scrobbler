@@ -282,7 +282,7 @@ export default defineComponent({
             }
 
             return h("span", spanChildren);
-          }
+          },
         },
         {
           title: "Actions",
@@ -332,8 +332,14 @@ export default defineComponent({
 
       return selectedPlays;
     });
-    const canDeleteMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
-    const canScrobbleMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
+    const canDeleteMultiSelection = computed(
+      (): boolean =>
+        playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt),
+    );
+    const canScrobbleMultiSelection = computed(
+      (): boolean =>
+        playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt),
+    );
     const playsMultiSelectedCountLabel = computed((): string => {
       const count = selectedRowKeys.value.length;
       if (count === 1) {
