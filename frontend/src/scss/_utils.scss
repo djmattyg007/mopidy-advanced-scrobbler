@@ -1,0 +1,21 @@
+.mas-flex {
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.mas-spacer {
+  flex-grow: 1;
+}
+
+.mas-flex-column {
+  flex-direction: column;
+}
+
+.mas-flex-grow {
+  flex-grow: 1;
+  flex-basis: auto;
+}
+
+.mas-flex-no-shrink {
+  flex-shrink: 0;
+}

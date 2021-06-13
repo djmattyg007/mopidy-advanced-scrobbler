@@ -1,9 +1,8 @@
 <template>
   <main>
     <n-h1>Plays</n-h1>
-    <br />
 
-    <n-card>
+    <n-card :content-style="cardContentStyle">
       <template #header>
         <n-element class="mas-toolbar">
           <span v-if="plays.value && plays.value.counts.overall >= 0">
@@ -385,6 +384,12 @@ export default defineComponent({
     const deleteRequestSubmitting = ref(false);
     const scrobbleRequestSubmitting = ref(false);
 
+    const cardContentStyle = {
+      "--padding-left": "0",
+      "--padding-right": "0",
+      "--padding-bottom": "0",
+    };
+
     return {
       pageNumber,
       pageSize,
@@ -416,6 +421,8 @@ export default defineComponent({
       scrobblingOverlay,
       deleteRequestSubmitting,
       scrobbleRequestSubmitting,
+
+      cardContentStyle,
     };
   },
 });
