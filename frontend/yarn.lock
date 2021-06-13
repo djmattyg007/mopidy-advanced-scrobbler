@@ -930,11 +930,6 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
-"@mdi/font@^5.9.55":
-  version "5.9.55"
-  resolved "https://registry.yarnpkg.com/@mdi/font/-/font-5.9.55.tgz#41acd50b88073ded7095fc3029d8712b6e12f38e"
-  integrity sha512-jswRF6q3eq8NWpWiqct6q+6Fg/I7nUhrxYJfiEM8JJpap0wVJLQdbKtyS65GdlK7S7Ytnx3TTi/bmw+tBhkGmg==
-
 "@mdi/svg@^5.9.55":
   version "5.9.55"
   resolved "https://registry.yarnpkg.com/@mdi/svg/-/svg-5.9.55.tgz#7cba058135afd5d8a3da977f51b71ffc6a3a3699"
@@ -9193,11 +9188,6 @@ watchpack@^1.7.4:
   optionalDependencies:
     chokidar "^3.4.1"
     watchpack-chokidar2 "^2.0.1"
-
-wave-ui@2.19.2:
-  version "2.19.2"
-  resolved "https://registry.yarnpkg.com/wave-ui/-/wave-ui-2.19.2.tgz#82cdf55ff2198401a65cd3f8728eef11512968ed"
-  integrity sha512-hsYWId2HmJCwSiLQaMLY6XGV3cjKKwZzVkULpp64VzjKHD6/0Lw6vsZJhBcvqQ+zVLGxK5MNPkMw5F4OopjDNw==
 
 wbuf@^1.1.0, wbuf@^1.7.3:
   version "1.7.3"

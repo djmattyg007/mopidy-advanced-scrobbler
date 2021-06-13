@@ -9,7 +9,6 @@
     "generate-icons": "yarn run ts-node --compiler-options '{\"module\":\"commonjs\"}' --require esm scripts/generate-icons.ts"
   },
   "dependencies": {
-    "@mdi/font": "^5.9.55",
     "@mdi/svg": "^5.9.55",
     "@vicons/fa": "^0.8.0",
     "@vicons/ionicons5": "^0.8.0",
@@ -23,8 +22,7 @@
     "vue-concurrency": "^2.0.3",
     "vue-promised": "^2.0.3",
     "vue-router": "^4.0.8",
-    "vuex": "^4.0.1",
-    "wave-ui": "2.19.2"
+    "vuex": "^4.0.1"
   },
   "devDependencies": {
     "@types/luxon": "^1.27.0",

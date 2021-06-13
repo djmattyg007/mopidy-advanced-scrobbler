@@ -149,10 +149,16 @@ class ApiPlayLoad(_BaseJsonHandler):
             unsubmitted_plays_count = db.get_plays_count(only_unsubmitted=True).get()
         except Exception as exc:
             logger.exception(f"Error while retrieving play counts from database: {exc}")
+            return
+
+        play_id_mapping = {}
+        for idx, play in enumerate(plays):
+            play_id_mapping[play.play_id] = idx
 
         response = {
             "success": True,
             "plays": recorded_play_schema.dump(plays, many=True),
+            "playIdMapping": play_id_mapping,
             "counts": {
                 "overall": overall_plays_count,
                 "unsubmitted": unsubmitted_plays_count,

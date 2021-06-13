@@ -124,7 +124,7 @@
         :columns="columns"
         :data="plays.value ? plays.value.plays : []"
         :row-key="(row) => row.playId"
-        v-model:checked-row-keys="selectedRows"
+        v-model:checked-row-keys="selectedRowKeys"
         :loading="plays.isRunning"
       />
     </n-card>
@@ -155,6 +155,7 @@ import UnixTimestamp from "@/components/UnixTimestamp.vue";
 
 interface LoadPlaysResponse {
   readonly plays: ReadonlyArray<Play>;
+  readonly playIdMapping: Record<Play["playId"], number>;
   readonly counts: {
     readonly overall: number;
     readonly unsubmitted: number;
@@ -206,6 +207,9 @@ export default defineComponent({
 
     const columns = computed(() => {
       const cols: DataTableColumn[] = [
+        {
+          type: "selection",
+        },
         {
           title: "ID",
           key: "playId",
@@ -283,8 +287,8 @@ export default defineComponent({
       plays.value = retrievePlaysTask.perform();
     };
 
-    const selectedRows = ref([]) as Ref<number[]>;
-    const playsMultiSelected = computed((): boolean => selectedRows.value.length > 0);
+    const selectedRowKeys = ref([]) as Ref<number[]>;
+    const playsMultiSelected = computed((): boolean => selectedRowKeys.value.length > 0);
     const multiSelectPlays = computed((): ReadonlyArray<Play> => {
       const playsData = plays.value.value;
       if (!playsData) {
@@ -293,8 +297,9 @@ export default defineComponent({
 
       const selectedPlays: Play[] = [];
 
-      for (const selectedRowNum of selectedRows.value) {
-        selectedPlays.push(playsData.plays[selectedRowNum]);
+      for (const selectedRowKey of selectedRowKeys.value) {
+        const pos = playsData.playIdMapping[selectedRowKey];
+        selectedPlays.push(playsData.plays[pos]);
       }
 
       return selectedPlays;
@@ -302,7 +307,7 @@ export default defineComponent({
     const canDeleteMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
     const canScrobbleMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
     const playsMultiSelectedCountLabel = computed((): string => {
-      const count = selectedRows.value.length;
+      const count = selectedRowKeys.value.length;
       if (count === 1) {
         return `${count} play`;
       } else {
@@ -399,7 +404,7 @@ export default defineComponent({
       columns,
       isFirstPage,
       plays,
-      selectedRows,
+      selectedRowKeys,
       playsMultiSelected,
       multiSelectPlays,
       canDeleteMultiSelection,
