@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint --no-fix"
+    "lint": "vue-cli-service lint --no-fix",
+    "generate-icons": "yarn run ts-node --compiler-options '{\"module\":\"commonjs\"}' --require esm scripts/generate-icons.ts"
   },
   "dependencies": {
     "@mdi/font": "^5.9.55",
@@ -43,6 +44,7 @@
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-vue": "^7.11.0",
     "esm": "^3.2.25",
+    "globby": "^11.0.3",
     "prettier": "^2.3.1",
     "sass": "^1.34.1",
     "sass-loader": "^10.1.1",

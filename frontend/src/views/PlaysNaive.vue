@@ -98,7 +98,7 @@
             @click="scrobbleUnsubmitted"
           >
             <template #icon>
-              <icon-auto-upload />
+              <icon-scrobble-all />
             </template>
           </n-button>
           <n-button
@@ -148,8 +148,8 @@ import { api } from "@/api";
 
 import { Play } from "@/types";
 
-import IconAutoUpload from "@/icons/AutoUploadIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
+import IconScrobbleAll from "@/icons/ScrobbleAllIcon.vue";
 
 import CorrectedLabel from "@/components/CorrectedLabel.vue";
 import UnixTimestamp from "@/components/UnixTimestamp.vue";
@@ -183,12 +183,12 @@ interface EditablePlay {
 export default defineComponent({
   name: "PlaysView",
   components: {
-    IconAutoUpload,
     IconDelete,
     IconPageFirst,
     IconPageNext,
     IconPagePrev,
     IconRefresh,
+    IconScrobbleAll,
     IconUpload,
     NButton,
     NCard,

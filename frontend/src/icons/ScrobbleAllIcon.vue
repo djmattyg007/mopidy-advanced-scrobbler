@@ -9,10 +9,10 @@ import { defineComponent } from "vue";
 import { NIcon } from "naive-ui";
 //import { Icon } from "@vicons/utils";
 
-import SvgIcon from "@/svg/auto-upload.svg";
+import SvgIcon from "@/svg/scrobble-all.svg";
 
 export default defineComponent({
-  name: "AutoUploadIcon",
+  name: "ScrobbleAllIcon",
   components: {
     NIcon,
     SvgIcon,
