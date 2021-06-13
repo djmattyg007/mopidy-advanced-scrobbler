@@ -16,45 +16,39 @@
 
           <n-button
             text
-            size="large"
             aria-label="First Page"
             title="First Page"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || isFirstPage"
             @click="goToFirstPage"
           >
             <template #icon>
-              <n-icon>
-                <icon-page-first />
-              </n-icon>
+              <icon-skip-backward :size="buttonIconSize" />
             </template>
           </n-button>
           <n-button
             text
-            size="large"
             aria-label="Previous Page"
             title="Previous Page"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || isFirstPage"
             @click="goToPreviousPage"
           >
             <template #icon>
-              <n-icon>
-                <icon-page-prev />
-              </n-icon>
+              <icon-step-backward :size="buttonIconSize" />
             </template>
           </n-button>
           <n-text strong>{{ pageNumber }}</n-text>
           <n-button
             text
-            size="large"
             aria-label="Next Page"
             title="Next Page"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || !plays.value || plays.value.plays.length < pageSize"
             @click="goToNextPage"
           >
             <template #icon>
-              <n-icon>
-                <icon-page-next />
-              </n-icon>
+              <icon-step-forward :size="buttonIconSize" />
             </template>
           </n-button>
 
@@ -62,54 +56,50 @@
 
           <n-button
             text
-            size="large"
             aria-label="Delete Selected"
             title="Delete Selected"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || deleteRequestSubmitting || !canDeleteMultiSelection"
             @click="deleteMultiSelected"
           >
             <template #icon>
-              <n-icon>
-                <icon-delete />
-              </n-icon>
+              <icon-delete :size="buttonIconSize" />
             </template>
           </n-button>
           <n-button
             text
-            size="large"
             aria-label="Scrobble Selected"
             title="Scrobble Selected"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
             @click="scrobbleMultiSelected"
           >
             <template #icon>
-              <n-icon>
-                <icon-upload />
-              </n-icon>
+              <icon-scrobble :size="buttonIconSize" />
             </template>
           </n-button>
           <n-button
             text
-            size="large"
             aria-label="Scrobble Unsubmitted"
             title="Scrobble Unsubmitted"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning || scrobbleRequestSubmitting"
             @click="scrobbleUnsubmitted"
           >
             <template #icon>
-              <icon-scrobble-all />
+              <icon-scrobble-all :size="buttonIconSize" />
             </template>
           </n-button>
           <n-button
             text
-            size="large"
             aria-label="Refresh List"
             title="Refresh List"
+            :style="iconButtonStyles"
             :disabled="plays.isRunning"
             @click="refresh"
           >
             <template #icon>
-              <icon-refresh />
+              <icon-refresh :size="buttonIconSize" />
             </template>
           </n-button>
         </n-element>
@@ -134,21 +124,29 @@
 <script lang="ts">
 import { computed, defineComponent, h, ref, Ref } from "vue";
 import { useAsyncTask } from "vue-concurrency";
-import { DataTableColumn, NButton, NCard, NDataTable, NElement, NH1, NIcon, NText } from "naive-ui";
 import {
-  FastBackward as IconPageFirst,
-  StepBackward as IconPagePrev,
-  StepForward as IconPageNext,
-  TrashAlt as IconDelete,
-  Upload as IconUpload,
-} from "@vicons/fa";
+  DataTableColumn,
+  NButton,
+  NCard,
+  NDataTable,
+  NElement,
+  NH1,
+  NText,
+  NTooltip,
+} from "naive-ui";
 
 import { api } from "@/api";
 
-import { Play } from "@/types";
+import { Play, Corrected } from "@/types";
 
+import IconDelete from "@/icons/DeleteIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
+import IconScrobble from "@/icons/ScrobbleIcon.vue";
 import IconScrobbleAll from "@/icons/ScrobbleAllIcon.vue";
+import IconSkipBackward from "@/icons/SkipBackwardIcon.vue";
+import IconStepBackward from "@/icons/StepBackwardIcon.vue";
+import IconStepForward from "@/icons/StepForwardIcon.vue";
+import IconTick from "@/icons/TickIcon.vue";
 
 import CorrectedLabel from "@/components/CorrectedLabel.vue";
 import UnixTimestamp from "@/components/UnixTimestamp.vue";
@@ -184,23 +182,23 @@ export default defineComponent({
   name: "PlaysView",
   components: {
     IconDelete,
-    IconPageFirst,
-    IconPageNext,
-    IconPagePrev,
     IconRefresh,
+    IconScrobble,
     IconScrobbleAll,
-    IconUpload,
+    IconSkipBackward,
+    IconStepBackward,
+    IconStepForward,
     NButton,
     NCard,
     NDataTable,
     NElement,
     NH1,
-    NIcon,
     NText,
   },
   setup() {
     const pageNumber = ref(1);
-    const pageSize = ref(10);
+    const pageSize = 50;
+    const buttonIconSize = 34;
 
     const selectedPlay = ref(null) as Ref<Play | null>;
     const playEdit = ref(null) as Ref<EditablePlay | null>;
@@ -235,18 +233,44 @@ export default defineComponent({
           key: "corrected",
           sorter: false,
           align: "center",
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           render(row) {
-            // @ts-ignore
-            return h(CorrectedLabel, { value: row.corrected });
+            if (row.corrected === Corrected.NOT_CORRECTED) {
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              return h(CorrectedLabel, { value: row.corrected });
+            }
+
+            return h(
+              NTooltip,
+              { placement: "bottom", trigger: "hover" },
+              {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                trigger: () => h(CorrectedLabel, { value: row.corrected }),
+                default: () => {
+                  return h("dl", [
+                    h("dt", "Orig. Title"),
+                    h("dd", `${row.origTitle}`),
+                    h("dt", "Orig. Artist"),
+                    h("dd", `${row.origArtist}`),
+                    h("dt", "Orig. Album"),
+                    h("dd", `${row.origAlbum}`),
+                  ]);
+                },
+              },
+            );
           },
         },
         {
           title: "Played At",
           key: "playedAt",
           sorter: false,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           render(row) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             return h(UnixTimestamp, { value: row.playedAt });
           },
@@ -256,6 +280,18 @@ export default defineComponent({
           key: "submittedAt",
           sorter: false,
           align: "center",
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          render(row) {
+            const spanChildren = [];
+            if (row.submittedAt) {
+              spanChildren.push(h(IconTick, { color: "green", size: 20 }));
+            }
+
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            return h("span", spanChildren);
+          }
         },
         {
           title: "Actions",
@@ -269,12 +305,13 @@ export default defineComponent({
     });
 
     const isFirstPage = computed((): boolean => pageNumber.value === 1);
+    const selectedRowKeys = ref([]) as Ref<number[]>;
 
     const retrievePlays = async (): Promise<LoadPlaysResponse> => {
       const response = await api.get<LoadPlaysResponse>("/plays/load", {
         params: {
           page: pageNumber.value,
-          page_size: pageSize.value,
+          page_size: pageSize,
         },
       });
       return response.data;
@@ -284,10 +321,10 @@ export default defineComponent({
     }).drop();
     const plays = ref(retrievePlaysTask.perform());
     const loadPlays = (): void => {
+      selectedRowKeys.value = [];
       plays.value = retrievePlaysTask.perform();
     };
 
-    const selectedRowKeys = ref([]) as Ref<number[]>;
     const playsMultiSelected = computed((): boolean => selectedRowKeys.value.length > 0);
     const multiSelectPlays = computed((): ReadonlyArray<Play> => {
       const playsData = plays.value.value;
@@ -395,6 +432,10 @@ export default defineComponent({
       "--padding-bottom": "0",
     };
 
+    const iconButtonStyles = {
+      "--icon-size": `${buttonIconSize}px`,
+    };
+
     return {
       pageNumber,
       pageSize,
@@ -428,6 +469,9 @@ export default defineComponent({
       scrobbleRequestSubmitting,
 
       cardContentStyle,
+
+      buttonIconSize,
+      iconButtonStyles,
     };
   },
 });

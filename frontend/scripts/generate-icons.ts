@@ -10,8 +10,14 @@ process.chdir(path.dirname(__dirname));
 const mdi = "node_modules/@mdi/svg/svg";
 
 const svgPaths: [string, string][] = [
+  ["delete", `${mdi}/delete-forever.svg`],
   ["refresh", `${mdi}/refresh.svg`],
+  ["scrobble", `${mdi}/upload.svg`],
   ["scrobble-all", `${mdi}/auto-upload.svg`],
+  ["skip-backward", `${mdi}/skip-backward.svg`],
+  ["step-backward", `${mdi}/step-backward.svg`],
+  ["step-forward", `${mdi}/step-forward.svg`],
+  ["tick", `${mdi}/check.svg`],
 ];
 
 if (fs.existsSync("src/svg")) {
