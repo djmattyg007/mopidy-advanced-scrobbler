@@ -590,9 +590,7 @@
 <script lang="ts">
 import { defineComponent, computed, reactive, ref, Ref } from "vue";
 import { useAsyncTask } from "vue-concurrency";
-import type { TableHeader } from "wave-ui";
-// @ts-ignore
-import type { Play, Corrected } from "@/types";
+import type { Play } from "@/types";
 
 import { api } from "@/api";
 
@@ -631,7 +629,7 @@ export default defineComponent({
     CorrectedLabel,
     UnixTimestamp,
   },
-  setup(props, ctx) {
+  setup() {
     const pageNumber = ref(1);
     const pageSize = ref(50);
 
@@ -648,7 +646,7 @@ export default defineComponent({
       multiScrobble: false,
     });
 
-    const headers = computed((): TableHeader[] => {
+    const headers = computed(() => {
       const headers = [
         { label: "ID", key: "playId", sortable: false },
         { label: "Title", key: "title", sortable: false },
@@ -701,8 +699,14 @@ export default defineComponent({
 
       return selectedPlays;
     });
-    const canDeleteMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
-    const canScrobbleMultiSelection = computed((): boolean => playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt));
+    const canDeleteMultiSelection = computed(
+      (): boolean =>
+        playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt),
+    );
+    const canScrobbleMultiSelection = computed(
+      (): boolean =>
+        playsMultiSelected.value && multiSelectPlays.value.every((play) => !play.submittedAt),
+    );
     const playsMultiSelectedCountLabel = computed((): string => {
       const count = selectedRows.value.length;
       if (count === 1) {

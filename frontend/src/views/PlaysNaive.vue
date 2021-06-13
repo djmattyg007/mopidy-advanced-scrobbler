@@ -113,7 +113,7 @@
         v-else
         :columns="columns"
         :data="plays.value ? plays.value.plays : []"
-         table-layout="fixed"
+        table-layout="fixed"
         :row-key="(row) => row.playId"
         v-model:checked-row-keys="selectedRowKeys"
         :loading="plays.isRunning"
