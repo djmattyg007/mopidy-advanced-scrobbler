@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 pushd frontend
-if [[ "${CI}" == "true" ]]; then
+if [[ "${CI:-false}" == "true" ]]; then
   yarn run build
 else
   yarn run build --mode development

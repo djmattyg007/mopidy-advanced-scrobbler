@@ -22,3 +22,15 @@ dt {
 dd {
   margin-bottom: 4px;
 }
+
+.mas-toolbar {
+  display: flex;
+
+  .n-card > .n-card-header .n-card-header__main & {
+    font-weight: var(--font-weight);
+  }
+}
+
+.mas-spacer {
+  flex-grow: 1;
+}

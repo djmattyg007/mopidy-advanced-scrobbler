@@ -1,19 +1,20 @@
 <template>
-  <w-app>
-    <header class="no-shrink">
-      <app-toolbar />
-    </header>
-    <div class="content-wrap w-flex no-shrink">
-      <div class="main-content w-flex column grow">
-        <router-view class="grow" />
-      </div>
-    </div>
-  </w-app>
+  <n-layout>
+    <n-layout-header bordered>
+      <div>Advanced Scrobbler</div>
+      <n-space justify="end">
+        <app-toolbar />
+      </n-space>
+    </n-layout-header>
+    <n-layout>
+      <router-view />
+    </n-layout>
+  </n-layout>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import "wave-ui/dist/wave-ui.css";
+import { NLayout, NLayoutHeader, NSpace } from "naive-ui";
 
 import AppToolbar from "@/components/AppToolbar.vue";
 
@@ -21,6 +22,9 @@ export default defineComponent({
   name: "App",
   components: {
     AppToolbar,
+    NLayout,
+    NLayoutHeader,
+    NSpace,
   },
 });
 </script>
