@@ -63,7 +63,7 @@
             title="Delete Selected"
             class="mas-ml3"
             :style="iconButtonStyles"
-            :disabled="plays.isRunning || deleteRequestSubmitting || !canDeleteMultiSelection"
+            :disabled="plays.isRunning || requestSubmitting || !canDeleteMultiSelection"
             @click="deleteMultiSelected"
           >
             <template #icon>
@@ -76,7 +76,7 @@
             title="Scrobble Selected"
             class="mas-ml3"
             :style="iconButtonStyles"
-            :disabled="plays.isRunning || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
+            :disabled="plays.isRunning || requestSubmitting || !canScrobbleMultiSelection"
             @click="scrobbleMultiSelected"
           >
             <template #icon>
@@ -89,7 +89,7 @@
             title="Scrobble Unsubmitted"
             class="mas-ml3"
             :style="iconButtonStyles"
-            :disabled="plays.isRunning || scrobbleRequestSubmitting"
+            :disabled="plays.isRunning || requestSubmitting"
             @click="scrobbleUnsubmitted"
           >
             <template #icon>
@@ -130,17 +130,24 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, h, ref, Ref } from "vue";
+import { computed, defineComponent, h, ref, Ref, VNode } from "vue";
 import { useAsyncTask } from "vue-concurrency";
 import {
   DataTableColumn,
+  DialogReactive,
   NButton,
   NCard,
   NDataTable,
+  NDescriptions,
+  NDescriptionsItem,
   NElement,
   NH1,
+  NPopselect,
   NText,
   NTooltip,
+  SelectOption,
+  useDialog,
+  useMessage,
 } from "naive-ui";
 
 import { api } from "@/api";
@@ -159,6 +166,9 @@ import IconTick from "@/icons/TickIcon.vue";
 import CorrectedLabel from "@/components/CorrectedLabel.vue";
 import UnixTimestamp from "@/components/UnixTimestamp.vue";
 
+import SvgIconDelete from "@/svg/delete.svg";
+import SvgIconScrobble from "@/svg/scrobble.svg";
+
 interface LoadPlaysResponse {
   readonly plays: ReadonlyArray<Play>;
   readonly playIdMapping: Record<Play["playId"], number>;
@@ -168,13 +178,13 @@ interface LoadPlaysResponse {
   };
 }
 
-/*interface ScrobbleResponse {
+interface ScrobbleResponse {
   readonly success: boolean;
   readonly foundPlays: ReadonlyArray<number>;
   readonly scrobbledPlays: ReadonlyArray<number>;
   readonly markedPlays: ReadonlyArray<number>;
   readonly message: string | null;
-}*/
+}
 
 interface EditablePlay {
   readonly playId: number;
@@ -184,6 +194,34 @@ interface EditablePlay {
   album: string;
   saveCorrection: boolean;
   updateAllUnsubmitted: boolean;
+}
+
+function startDialogLoading(dialog: DialogReactive): void {
+  dialog.loading = true;
+  dialog.closable = false;
+  dialog.maskClosable = false;
+  dialog.negativeText = undefined;
+}
+
+function renderScrobbleResult(result: ScrobbleResponse): VNode {
+  const children: VNode[] = [];
+
+  children.push(
+    h(NDescriptions, { labelPlacement: "top" }, () => [
+      h(NDescriptionsItem, { label: "Found Plays" }, () => String(result.foundPlays.length)),
+      h(NDescriptionsItem, { label: "Scrobbled Plays" }, () =>
+        String(result.scrobbledPlays.length),
+      ),
+      h(NDescriptionsItem, { label: "Marked Plays" }, () => String(result.markedPlays.length)),
+    ]),
+  );
+
+  if (result.message) {
+    children.push(h("br"));
+    children.push(h("p", result.message));
+  }
+
+  return h("div", children);
 }
 
 export default defineComponent({
@@ -204,6 +242,9 @@ export default defineComponent({
     NText,
   },
   setup() {
+    const dialog = useDialog();
+    const message = useMessage();
+
     const pageNumber = ref(1);
     const pageSize = 50;
     const buttonIconSize = 34;
@@ -301,6 +342,50 @@ export default defineComponent({
           key: "actions",
           sorter: false,
           align: "right",
+          width: 100,
+          render(row) {
+            const play = row as unknown as Play;
+
+            const options: SelectOption[] = [];
+            if (!play.submittedAt) {
+              options.push(
+                { value: "edit", label: "Edit" },
+                { value: "submit", label: "Submit" },
+                { value: "delete", label: "Delete" },
+                { value: "scrobbleToHere", label: "Scrobble To Here" },
+              );
+            }
+            if (play.corrected === Corrected.AUTO_CORRECTED) {
+              options.splice(1, 0, {
+                value: "approveAutoCorrection",
+                label: "Approve Auto-Correction",
+              });
+            }
+
+            return h(
+              NPopselect,
+              {
+                "disabled": options.length === 0,
+                "options": options,
+                "placement": "left-end",
+                "size": "small",
+                "on-update:value": (value: string) => {
+                  console.log(value);
+                },
+              },
+              {
+                default: () =>
+                  h(
+                    NButton,
+                    {
+                      disabled: options.length === 0,
+                      size: "medium",
+                    },
+                    { default: () => "Menu" },
+                  ),
+              },
+            );
+          },
         },
       ];
 
@@ -416,24 +501,161 @@ export default defineComponent({
     const scrobbleUnsubmitted = (): void => {
       //dialogShow.scrobble = true;
     };
+
+    const requestSubmitting = ref(false);
+
+    const submitMultiDeleteRequest = async (playIds: ReadonlyArray<number>): Promise<boolean> => {
+      let success = false;
+      try {
+        await api.post("/plays/delete-many", { playIds });
+        success = true;
+        message.success("Successfully deleted plays.");
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while deleting plays";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+      }
+
+      return success;
+    };
+    const runMultiDelete = (): void => {
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      } else if (canDeleteMultiSelection.value !== true) {
+        message.error("Invalid plays selection.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+      const selectedPlayIds = selectedRowKeys.value.slice();
+
+      const d = dialog.warning({
+        title: "Delete Plays",
+        icon: () => h(SvgIconDelete),
+        bordered: true,
+        content: `Are you sure you want to delete ${playsMultiSelectedCountLabel.value}?`,
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitMultiDeleteRequest(selectedPlayIds);
+          requestSubmitting.value = false;
+          if (result === true) {
+            loadPlays();
+          }
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
+    };
     const deleteMultiSelected = (): void => {
       if (canDeleteMultiSelection.value === true) {
-        //dialogShow.multiDelete = true;
+        runMultiDelete();
       } else {
-        alert("Invalid selection - must select only deleteable plays.");
-      }
-    };
-    const scrobbleMultiSelected = (): void => {
-      if (canScrobbleMultiSelection.value === true) {
-        //dialogShow.multiScrobble = true;
-      } else {
-        alert("Invalid selection - must select only submittable plays.");
+        message.error("Invalid selection - must select only deleteable plays.");
       }
     };
 
-    const scrobblingOverlay = ref(false);
-    const deleteRequestSubmitting = ref(false);
-    const scrobbleRequestSubmitting = ref(false);
+    const submitMultiScribbleRequest = async (
+      playIds: ReadonlyArray<number>,
+    ): Promise<ScrobbleResponse | null> => {
+      let response: ScrobbleResponse;
+      try {
+        response = (await api.post<ScrobbleResponse>("/plays/scrobble-many", { playIds })).data;
+        message.success("Successfully scrobbled plays.");
+        return response;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while scrobbling";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+        return null;
+      }
+    };
+    const runMultiScrobble = (): void => {
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      } else if (canScrobbleMultiSelection.value !== true) {
+        message.error("Invalid plays selection.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+      const selectedPlayIds = selectedRowKeys.value.slice();
+
+      const d = dialog.success({
+        title: "Scrobble Plays",
+        icon: () => h(SvgIconScrobble),
+        bordered: true,
+        content: `Are you sure you want to scrobble ${playsMultiSelectedCountLabel.value}?`,
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitMultiScribbleRequest(selectedPlayIds);
+          requestSubmitting.value = false;
+          if (result === null) {
+            return;
+          }
+
+          loadPlays();
+          dialog.info({
+            title: "Success",
+            bordered: true,
+            content: () => renderScrobbleResult(result),
+            positiveText: "Close",
+          });
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
+    };
+    const scrobbleMultiSelected = (): void => {
+      if (canScrobbleMultiSelection.value === true) {
+        runMultiScrobble();
+      } else {
+        message.error("Invalid selection - must select only submittable plays.");
+      }
+    };
 
     const cardHeaderStyle = {
       "--padding-left": "12px",
@@ -476,9 +698,7 @@ export default defineComponent({
       deleteMultiSelected,
       scrobbleMultiSelected,
 
-      scrobblingOverlay,
-      deleteRequestSubmitting,
-      scrobbleRequestSubmitting,
+      requestSubmitting,
 
       cardHeaderStyle, // Doesn't currently work
       cardContentStyle,

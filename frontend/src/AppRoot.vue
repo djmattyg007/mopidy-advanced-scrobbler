@@ -4,11 +4,11 @@
     :theme-overrides="themeOverrides"
     namespace="advanced-scrobbler"
   >
-    <n-notification-provider>
+    <n-message-provider>
       <n-dialog-provider>
         <App />
       </n-dialog-provider>
-    </n-notification-provider>
+    </n-message-provider>
     <n-global-style />
   </n-config-provider>
 </template>
@@ -21,7 +21,7 @@ import {
   NConfigProvider,
   NDialogProvider,
   NGlobalStyle,
-  NNotificationProvider,
+  NMessageProvider,
 } from "naive-ui";
 
 import App from "./App.vue";
@@ -33,7 +33,7 @@ export default defineComponent({
     NConfigProvider,
     NDialogProvider,
     NGlobalStyle,
-    NNotificationProvider,
+    NMessageProvider,
   },
   setup() {
     const osThemeRef = useOsTheme();
