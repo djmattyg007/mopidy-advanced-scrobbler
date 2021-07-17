@@ -18,6 +18,7 @@
             text
             aria-label="First Page"
             title="First Page"
+            class="mas-mx1"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || isFirstPage"
             @click="goToFirstPage"
@@ -30,6 +31,7 @@
             text
             aria-label="Previous Page"
             title="Previous Page"
+            class="mas-mx1"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || isFirstPage"
             @click="goToPreviousPage"
@@ -38,11 +40,12 @@
               <icon-step-backward :size="buttonIconSize" />
             </template>
           </n-button>
-          <n-text strong>{{ pageNumber }}</n-text>
+          <n-text strong class="mas-mx2" style="font-size: 28px">{{ pageNumber }}</n-text>
           <n-button
             text
             aria-label="Next Page"
             title="Next Page"
+            class="mas-mx1"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || !plays.value || plays.value.plays.length < pageSize"
             @click="goToNextPage"
@@ -58,6 +61,7 @@
             text
             aria-label="Delete Selected"
             title="Delete Selected"
+            class="mas-ml3"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || deleteRequestSubmitting || !canDeleteMultiSelection"
             @click="deleteMultiSelected"
@@ -70,6 +74,7 @@
             text
             aria-label="Scrobble Selected"
             title="Scrobble Selected"
+            class="mas-ml3"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || scrobbleRequestSubmitting || !canScrobbleMultiSelection"
             @click="scrobbleMultiSelected"
@@ -82,6 +87,7 @@
             text
             aria-label="Scrobble Unsubmitted"
             title="Scrobble Unsubmitted"
+            class="mas-ml3"
             :style="iconButtonStyles"
             :disabled="plays.isRunning || scrobbleRequestSubmitting"
             @click="scrobbleUnsubmitted"
@@ -94,6 +100,7 @@
             text
             aria-label="Refresh List"
             title="Refresh List"
+            class="mas-ml3"
             :style="iconButtonStyles"
             :disabled="plays.isRunning"
             @click="refresh"

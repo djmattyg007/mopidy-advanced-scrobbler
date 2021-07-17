@@ -1,3 +1,5 @@
+$mas-spacing: 4px;
+
 .mas-flex {
   display: flex;
   flex: 1 1 auto;
@@ -18,4 +20,18 @@
 
 .mas-flex-no-shrink {
   flex-shrink: 0;
+}
+
+.mas-mx1 {
+  margin-left: $mas-spacing * 1;
+  margin-right: $mas-spacing * 1;
+}
+
+.mas-mx2 {
+  margin-left: $mas-spacing * 2;
+  margin-right: $mas-spacing * 2;
+}
+
+.mas-ml3 {
+  margin-left: $mas-spacing * 3;
 }

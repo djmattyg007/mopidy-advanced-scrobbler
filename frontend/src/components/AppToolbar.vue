@@ -1,10 +1,11 @@
 <template>
-  <n-menu mode="horizontal" :options="menuOptions" />
+  <n-menu mode="horizontal" :options="menuOptions" :render-label="renderMenuLabel" />
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, h } from "vue";
 import { NMenu, MenuOption } from "naive-ui";
+import { RouterLink } from "vue-router";
 
 export default defineComponent({
   name: "AppToolbar",
@@ -14,17 +15,19 @@ export default defineComponent({
       {
         label: "Plays",
         key: "plays",
-        //urlPath: "/plays",
       },
       {
         label: "Corrections",
         key: "corrections",
         disabled: true,
-        //urlPath: "/corrections",
       },
     ];
 
-    return { menuOptions };
+    const renderMenuLabel = (option: MenuOption) => {
+      return h(RouterLink, { to: option.key as string }, { default: () => option.label as string });
+    };
+
+    return { menuOptions, renderMenuLabel };
   },
 });
 </script>
