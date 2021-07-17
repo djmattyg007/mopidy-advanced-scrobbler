@@ -17,11 +17,11 @@
     "naive-ui": "^2.15.5",
     "vfonts": "^0.1.0",
     "vooks": "^0.2.8",
-    "vue": "^3.1.1",
+    "vue": "^3.1.5",
     "vue-concurrency": "^2.0.3",
     "vue-promised": "^2.0.3",
-    "vue-router": "^4.0.8",
-    "vuex": "^4.0.1"
+    "vue-router": "^4.0.10",
+    "vuex": "^4.0.2"
   },
   "devDependencies": {
     "@types/luxon": "^1.27.1",
