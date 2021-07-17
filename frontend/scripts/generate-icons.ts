@@ -37,6 +37,7 @@ if (fs.existsSync("src/icons")) {
 }
 
 function makeIconComponent(svgName: string, svgNamePascal: string): string {
+  //import { Icon } from "@vicons/utils";
   return `<template>
   <n-icon>
     <svg-icon />
@@ -46,7 +47,6 @@ function makeIconComponent(svgName: string, svgNamePascal: string): string {
 <script lang="ts">
 import { defineComponent } from "vue";
 import { NIcon } from "naive-ui";
-//import { Icon } from "@vicons/utils";
 
 import SvgIcon from "@/svg/${svgName}.svg";
 
