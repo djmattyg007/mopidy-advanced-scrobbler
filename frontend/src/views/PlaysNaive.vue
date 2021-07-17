@@ -468,6 +468,8 @@ export default defineComponent({
       loadPlays();
     };
 
+    const requestSubmitting = ref(false);
+
     const editPlay = (play: Play): void => {
       selectedPlay.value = play;
       playEdit.value = {
@@ -502,8 +504,6 @@ export default defineComponent({
       //dialogShow.scrobble = true;
     };
 
-    const requestSubmitting = ref(false);
-
     const submitMultiDeleteRequest = async (playIds: ReadonlyArray<number>): Promise<boolean> => {
       let success = false;
       try {
@@ -525,7 +525,7 @@ export default defineComponent({
 
       return success;
     };
-    const runMultiDelete = (): void => {
+    const deleteMultiSelected = (): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
         return;
@@ -568,13 +568,6 @@ export default defineComponent({
         },
       });
     };
-    const deleteMultiSelected = (): void => {
-      if (canDeleteMultiSelection.value === true) {
-        runMultiDelete();
-      } else {
-        message.error("Invalid selection - must select only deleteable plays.");
-      }
-    };
 
     const submitMultiScribbleRequest = async (
       playIds: ReadonlyArray<number>,
@@ -598,7 +591,7 @@ export default defineComponent({
         return null;
       }
     };
-    const runMultiScrobble = (): void => {
+    const scrobbleMultiSelected = (): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
         return;
@@ -649,13 +642,6 @@ export default defineComponent({
         },
       });
     };
-    const scrobbleMultiSelected = (): void => {
-      if (canScrobbleMultiSelection.value === true) {
-        runMultiScrobble();
-      } else {
-        message.error("Invalid selection - must select only submittable plays.");
-      }
-    };
 
     const cardHeaderStyle = {
       "--padding-left": "12px",
@@ -675,7 +661,6 @@ export default defineComponent({
       pageSize,
       selectedPlay,
       playEdit,
-      //dialogShow,
       columns,
       isFirstPage,
       selectedRowKeys,
