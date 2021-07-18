@@ -116,15 +116,17 @@
         <p>{{ plays.error }}</p>
         <n-data-table :columns="columns" :data="[]" table-layout="fixed" />
       </template>
-      <n-data-table
-        v-else
-        :columns="columns"
-        :data="plays.value ? plays.value.plays : []"
-        table-layout="fixed"
-        :row-key="(row) => row.playId"
-        v-model:checked-row-keys="selectedRowKeys"
-        :loading="plays.isRunning"
-      />
+      <n-config-provider v-else :theme-overrides="dataTableThemeOverrides">
+        <n-data-table
+          :columns="columns"
+          :data="plays.value ? plays.value.plays : []"
+          table-layout="fixed"
+          font-size-medium="16px"
+          :row-key="(row) => row.playId"
+          v-model:checked-row-keys="selectedRowKeys"
+          :loading="plays.isRunning"
+        />
+      </n-config-provider>
     </n-card>
   </main>
 </template>
@@ -136,8 +138,10 @@ import {
   DataTableColumn,
   DialogReactive,
   DropdownOption,
+  GlobalThemeOverrides,
   NButton,
   NCard,
+  NConfigProvider,
   NDataTable,
   NDescriptions,
   NDescriptionsItem,
@@ -221,6 +225,7 @@ export default defineComponent({
     IconStepForward,
     NButton,
     NCard,
+    NConfigProvider,
     NDataTable,
     NElement,
     NH1,
@@ -300,7 +305,7 @@ export default defineComponent({
           title: "Played At",
           key: "playedAt",
           sorter: false,
-          width: 175,
+          width: 195,
           render(row) {
             const play = row as unknown as Play;
             return h(UnixTimestamp, { value: play.playedAt });
@@ -808,6 +813,14 @@ export default defineComponent({
       "--icon-size": `${buttonIconSize}px`,
     };
 
+    const dataTableThemeOverrides = computed((): GlobalThemeOverrides => {
+      return {
+        common: {
+          fontSizeMedium: "16px",
+        },
+      };
+    });
+
     return {
       pageNumber,
       pageSize,
@@ -838,6 +851,8 @@ export default defineComponent({
 
       buttonIconSize,
       iconButtonStyles,
+
+      dataTableThemeOverrides,
     };
   },
 });

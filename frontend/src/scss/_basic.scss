@@ -31,3 +31,12 @@ dd {
     font-weight: var(--font-weight);
   }
 }
+
+.n-card.n-card--bordered > .n-card__content {
+  > .n-data-table.n-data-table--bordered,
+  > .n-config-provider > .n-data-table.n-data-table--bordered {
+    > .n-spin-container > .n-spin-content > .n-data-table-wrapper {
+      border-width: 1px 0 0 0;
+    }
+  }
+}
