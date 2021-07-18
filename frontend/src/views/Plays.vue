@@ -592,7 +592,7 @@ import { defineComponent, computed, reactive, ref, Ref } from "vue";
 import { useAsyncTask } from "vue-concurrency";
 import type { Play } from "@/types";
 
-import { api } from "@/api";
+import { masApi } from "@/http";
 
 import CorrectedLabel from "@/components/CorrectedLabel.vue";
 import UnixTimestamp from "@/components/UnixTimestamp.vue";
@@ -667,7 +667,7 @@ export default defineComponent({
     const isFirstPage = computed((): boolean => pageNumber.value === 1);
 
     const retrievePlays = async (): Promise<LoadPlaysResponse> => {
-      const response = await api.get<LoadPlaysResponse>("/plays/load", {
+      const response = await masApi.get<LoadPlaysResponse>("/plays/load", {
         params: {
           page: pageNumber.value,
           page_size: pageSize.value,

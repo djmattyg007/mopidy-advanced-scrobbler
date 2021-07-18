@@ -150,7 +150,8 @@ import {
   useMessage,
 } from "naive-ui";
 
-import { api } from "@/api";
+import { masHttp } from "@/http";
+import { MasApi, LoadPlaysResponse, ScrobbleResponse } from "@/api/mas-api";
 
 import { Play, Corrected } from "@/types";
 
@@ -169,23 +170,6 @@ import UnixTimestamp from "@/components/UnixTimestamp.vue";
 import SvgIconDelete from "@/svg/delete.svg";
 import SvgIconScrobble from "@/svg/scrobble.svg";
 import SvgIconScrobbleAll from "@/svg/scrobble-all.svg";
-
-interface LoadPlaysResponse {
-  readonly plays: ReadonlyArray<Play>;
-  readonly playIdMapping: Record<Play["playId"], number>;
-  readonly counts: {
-    readonly overall: number;
-    readonly unsubmitted: number;
-  };
-}
-
-interface ScrobbleResponse {
-  readonly success: boolean;
-  readonly foundPlays: ReadonlyArray<number>;
-  readonly scrobbledPlays: ReadonlyArray<number>;
-  readonly markedPlays: ReadonlyArray<number>;
-  readonly message: string | null;
-}
 
 interface EditablePlay {
   readonly playId: number;
@@ -245,6 +229,8 @@ export default defineComponent({
   setup() {
     const dialog = useDialog();
     const message = useMessage();
+
+    const masApi = new MasApi(masHttp, message);
 
     const pageNumber = ref(1);
     const pageSize = 50;
@@ -413,13 +399,7 @@ export default defineComponent({
     const selectedRowKeys = ref([]) as Ref<number[]>;
 
     const retrievePlays = async (): Promise<LoadPlaysResponse> => {
-      const response = await api.get<LoadPlaysResponse>("/plays/load", {
-        params: {
-          page: pageNumber.value,
-          page_size: pageSize,
-        },
-      });
-      return response.data;
+      return masApi.loadPlays(pageNumber.value, pageSize);
     };
     const retrievePlaysTask = useAsyncTask((): ReturnType<typeof retrievePlays> => {
       return retrievePlays();
@@ -500,27 +480,6 @@ export default defineComponent({
       //dialogShow.edit = true;
     };
 
-    const submitApproveAutoCorrectionRequest = async (playId: number): Promise<boolean> => {
-      let success = false;
-      try {
-        await api.post("/approve-auto", { playId });
-        success = true;
-        message.success("Successfully approved auto-correction.");
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while approving auto-correction";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-      }
-
-      return success;
-    };
     const approveAutoCorrection = (play: Play): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -537,7 +496,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitApproveAutoCorrectionRequest(play.playId);
+          const result = await masApi.approveAutoCorrection(play.playId);
           requestSubmitting.value = false;
           if (result === true) {
             Object.assign(play, {
@@ -562,27 +521,6 @@ export default defineComponent({
       });
     };
 
-    const submitDeleteRequest = async (playId: number): Promise<boolean> => {
-      let success = false;
-      try {
-        await api.post("/plays/delete", { playId });
-        success = true;
-        message.success("Successfully deleted play.");
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while deleting play";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-      }
-
-      return success;
-    };
     const deletePlay = (play: Play): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -600,7 +538,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitDeleteRequest(play.playId);
+          const result = await masApi.submitDelete(play.playId);
           requestSubmitting.value = false;
           if (result === true) {
             loadPlays();
@@ -623,27 +561,6 @@ export default defineComponent({
       });
     };
 
-    const submitSinglePlayRequest = async (playId: number): Promise<boolean> => {
-      let success = false;
-      try {
-        await api.post("/plays/submit", { playId });
-        success = true;
-        message.success("Successfully scrobbled play.");
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while scrobbling play";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-      }
-
-      return success;
-    };
     const submitPlay = (play: Play): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -661,7 +578,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitSinglePlayRequest(play.playId);
+          const result = await masApi.submitSinglePlay(play.playId);
           requestSubmitting.value = false;
           if (result === true) {
             Object.assign(play, {
@@ -686,34 +603,6 @@ export default defineComponent({
       });
     };
 
-    const submitScrobbleUnsubmittedRequest = async (
-      checkpointId?: number,
-    ): Promise<ScrobbleResponse | null> => {
-      const params: Record<string, unknown> = {};
-      if (checkpointId) {
-        params["checkpoint"] = checkpointId;
-      }
-
-      let response: ScrobbleResponse;
-      try {
-        response = (await api.post<ScrobbleResponse>("/scrobble", params)).data;
-        message.success("Successfully scrobbled plays.");
-        return response;
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while scrobbling";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-        return null;
-      }
-    };
-
     const scrobbleToCheckpoint = (play: Play): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -731,7 +620,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitScrobbleUnsubmittedRequest(play.playId);
+          const result = await masApi.scrobbleUnsubmitted(play.playId);
           requestSubmitting.value = false;
           if (result === null) {
             return;
@@ -779,7 +668,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitScrobbleUnsubmittedRequest();
+          const result = await masApi.scrobbleUnsubmitted();
           requestSubmitting.value = false;
           if (result === null) {
             return;
@@ -810,27 +699,6 @@ export default defineComponent({
       });
     };
 
-    const submitMultiDeleteRequest = async (playIds: ReadonlyArray<number>): Promise<boolean> => {
-      let success = false;
-      try {
-        await api.post("/plays/delete-many", { playIds });
-        success = true;
-        message.success("Successfully deleted plays.");
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while deleting plays";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-      }
-
-      return success;
-    };
     const deleteMultiSelected = (): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -852,7 +720,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitMultiDeleteRequest(selectedPlayIds);
+          const result = await masApi.submitMultiDelete(selectedPlayIds);
           requestSubmitting.value = false;
           if (result === true) {
             loadPlays();
@@ -875,28 +743,6 @@ export default defineComponent({
       });
     };
 
-    const submitMultiScribbleRequest = async (
-      playIds: ReadonlyArray<number>,
-    ): Promise<ScrobbleResponse | null> => {
-      let response: ScrobbleResponse;
-      try {
-        response = (await api.post<ScrobbleResponse>("/plays/scrobble-many", { playIds })).data;
-        message.success("Successfully scrobbled plays.");
-        return response;
-      } catch (err) {
-        console.error(err);
-
-        let errMsg = "Error while scrobbling";
-        if (err.isAxiosError && err.response && err.response.data.message) {
-          errMsg += `: ${err.response.data.message}`;
-        } else {
-          errMsg += ".";
-        }
-
-        message.error(errMsg);
-        return null;
-      }
-    };
     const scrobbleMultiSelected = (): void => {
       if (requestSubmitting.value === true) {
         message.error("A request is already pending.");
@@ -918,7 +764,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await submitMultiScribbleRequest(selectedPlayIds);
+          const result = await masApi.submitMultiScrobble(selectedPlayIds);
           requestSubmitting.value = false;
           if (result === null) {
             return;
