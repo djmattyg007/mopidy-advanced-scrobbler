@@ -50,7 +50,10 @@ def dict_row_factory(cursor: sqlite3.Cursor, row: tuple):
 
 
 def log_query(query: str):
-    logger.debug("Executing DB query: %s", query.replace("\n", ""))
+    query = query.replace("\n", "")
+    query = query.replace(" " * 4, " ")
+
+    logger.debug("Executing DB query: %s", query)
 
 
 class Connection(sqlite3.Connection):
