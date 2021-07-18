@@ -49,6 +49,10 @@ def dict_row_factory(cursor: sqlite3.Cursor, row: tuple):
     return d
 
 
+def log_query(query: str):
+    logger.debug("Executing DB query: %s", query.replace("\n", ""))
+
+
 class Connection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):
         kwargs["isolation_level"] = None
@@ -123,7 +127,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         conn = self._connect()
 
         query = "SELECT * FROM plays WHERE play_id = ?"
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query, (play_id,))
         result = cursor.fetchone()
 
@@ -149,7 +153,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         query = query_template.format(placeholders)
         args = play_ids
 
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query, args)
 
         plays: List[RecordedPlay] = []
@@ -172,7 +176,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         offset = (int(page_num) - 1) * limit
 
         query = f"SELECT * FROM plays ORDER BY play_id {order} LIMIT {limit} OFFSET {offset}"
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query)
 
         plays: List[RecordedPlay] = []
@@ -190,7 +194,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         if checkpoint:
             query += f" AND play_id <= {checkpoint}"
         query += " ORDER BY play_id ASC LIMIT 50"
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query)
 
         plays: List[RecordedPlay] = []
@@ -206,7 +210,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         if only_unsubmitted:
             query += " WHERE submitted_at IS NULL"
 
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query)
         result = cursor.fetchone()
 
@@ -237,7 +241,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         )
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", query)
+            log_query(query)
             conn.execute(query, args)
 
     def edit_play(self, play_edit: PlayEdit):
@@ -270,7 +274,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 play_update_query = "UPDATE plays SET artist = ?, title = ?, album = ?, corrected = ? WHERE play_id = ?"
                 play_update_args += (play.play_id,)
 
-            logger.debug("Executing DB query: %s", play_update_query)
+            log_query(play_update_query)
             conn.execute(play_update_query, play_update_args)
 
             if play_edit.save_correction:
@@ -279,7 +283,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 ON CONFLICT (track_uri) DO
                 UPDATE SET artist = excluded.artist, title = excluded.title, album = excluded.album
                 """
-                logger.debug("Executing DB query: %s", correction_upsert_query)
+                log_query(correction_upsert_query)
                 conn.execute(
                     correction_upsert_query,
                     (play.track_uri, play_edit.artist, play_edit.title, play_edit.album),
@@ -298,7 +302,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         delete_args = (play_id,)
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", delete_query)
+            log_query(delete_query)
             cursor = conn.execute(delete_query, delete_args)
             return cursor.rowcount == 1
 
@@ -309,7 +313,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         delete_args = play_ids
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", delete_query)
+            log_query(delete_query)
             conn.execute(delete_query, delete_args)
 
     def mark_play_submitted(self, play_id: int) -> bool:
@@ -325,7 +329,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         update_args = (time(), play_id)
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", update_query)
+            log_query(update_query)
             cursor = conn.execute(update_query, update_args)
             return cursor.rowcount == 1
 
@@ -338,14 +342,14 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         update_args = (time(), *play_ids)
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", update_query)
+            log_query(update_query)
             conn.execute(update_query, update_args)
 
     def find_correction(self, track_uri: str) -> Optional[Correction]:
         conn = self._connect()
 
         query = "SELECT * FROM corrections WHERE track_uri = ?"
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query, (track_uri,))
         result = cursor.fetchone()
 
@@ -361,7 +365,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         offset = (int(page_num) - 1) * limit
 
         query = f"SELECT * FROM corrections LIMIT {limit} OFFSET {offset}"
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query)
 
         corrections: List[Correction] = []
@@ -375,7 +379,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
         query = "SELECT COUNT(*) as corrections_count FROM corrections"
 
-        logger.debug("Executing DB query: %s", query)
+        log_query(query)
         cursor = conn.execute(query)
         result = cursor.fetchone()
 
@@ -401,7 +405,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                 correction.track_uri,
             )
 
-            logger.debug("Executing DB query: %s", correction_update_query)
+            log_query(correction_update_query)
             conn.execute(correction_update_query, correction_update_args)
 
             if correction_edit.update_all_unsubmitted:
@@ -417,7 +421,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
                     correction.track_uri,
                 )
 
-                logger.debug("Executing DB query: %s", play_update_query)
+                log_query(play_update_query)
                 conn.execute(play_update_query, play_update_args)
 
     def delete_correction(self, track_uri: str) -> bool:
@@ -425,7 +429,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         delete_args = (track_uri,)
 
         with self._connect() as conn:
-            logger.debug("Executing DB query: %s", delete_query)
+            log_query(delete_query)
             cursor = conn.execute(delete_query, delete_args)
             return cursor.rowcount == 1
 
@@ -449,13 +453,13 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
             """
             correction_insert_args = (play.track_uri, play.artist, play.title, play.album)
 
-            logger.debug("Executing DB query: %s", correction_insert_query)
+            log_query(correction_insert_query)
             conn.execute(correction_insert_query, correction_insert_args)
 
             play_update_query = "UPDATE plays SET corrected = ? WHERE play_id = ?"
             play_update_args = (Corrected.MANUALLY_CORRECTED, play.play_id)
 
-            logger.debug("Executing DB query: %s", play_update_query)
+            log_query(play_update_query)
             conn.execute(play_update_query, play_update_args)
 
 
