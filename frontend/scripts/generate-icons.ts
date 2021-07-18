@@ -11,6 +11,7 @@ const mdi = "node_modules/@mdi/svg/svg";
 
 const svgPaths: [string, string][] = [
   ["delete", `${mdi}/delete-forever.svg`],
+  ["edit", `${mdi}/pencil.svg`],
   ["refresh", `${mdi}/refresh.svg`],
   ["scrobble", `${mdi}/upload.svg`],
   ["scrobble-all", `${mdi}/auto-upload.svg`],

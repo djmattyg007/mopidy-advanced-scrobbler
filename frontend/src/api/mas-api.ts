@@ -1,7 +1,7 @@
 import type { AxiosError, AxiosInstance } from "axios";
 
 import { isAxiosError } from "@/http";
-import type { Play } from "@/types";
+import type { Play, EditablePlay } from "@/types";
 
 interface Notifier {
   success(message: string): void;
@@ -55,6 +55,19 @@ export class MasApi {
       },
     });
     return response.data;
+  }
+
+  public async editPlay(play: Readonly<EditablePlay>): Promise<boolean> {
+    let success = false;
+    try {
+      await this.http.post("/plays/edit", { play });
+      success = true;
+      this.notifier.success("Successfully saved play.");
+    } catch (err) {
+      this.handleError("Error while saving play", err);
+    }
+
+    return success;
   }
 
   public async approveAutoCorrection(playId: number): Promise<boolean> {

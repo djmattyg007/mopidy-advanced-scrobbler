@@ -132,7 +132,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, h, ref, Ref, VNode } from "vue";
+import { computed, defineComponent, h, reactive, ref, toRaw, Ref, VNode } from "vue";
 import { useAsyncTask } from "vue-concurrency";
 import {
   DataTableColumn,
@@ -158,7 +158,7 @@ import { masHttp, mopidyHttp } from "@/http";
 import { MasApi, LoadPlaysResponse, ScrobbleResponse } from "@/api/mas-api";
 import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
 
-import { Play, Corrected } from "@/types";
+import { Play, Corrected, EditablePlay } from "@/types";
 
 import IconDelete from "@/icons/DeleteIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
@@ -171,20 +171,12 @@ import IconTick from "@/icons/TickIcon.vue";
 
 import CorrectedLabel from "@/components/CorrectedLabel.vue";
 import UnixTimestamp from "@/components/UnixTimestamp.vue";
+import EditPlayForm from "@/components/EditPlayForm.vue";
 
 import SvgIconDelete from "@/svg/delete.svg";
+import SvgIconEdit from "@/svg/edit.svg";
 import SvgIconScrobble from "@/svg/scrobble.svg";
 import SvgIconScrobbleAll from "@/svg/scrobble-all.svg";
-
-interface EditablePlay {
-  readonly playId: number;
-  readonly trackUri: string;
-  title: string;
-  artist: string;
-  album: string;
-  saveCorrection: boolean;
-  updateAllUnsubmitted: boolean;
-}
 
 function startDialogLoading(dialog: DialogReactive): void {
   dialog.loading = true;
@@ -242,8 +234,6 @@ export default defineComponent({
     const pageNumber = ref(1);
     const pageSize = 50;
     const buttonIconSize = 34;
-
-    const playEdit = ref(null) as Ref<EditablePlay | null>;
 
     const columns = computed(() => {
       const cols: DataTableColumn[] = [
@@ -374,6 +364,9 @@ export default defineComponent({
                 "size": "small",
                 "on-select": (key: string) => {
                   switch (key) {
+                    case "edit":
+                      editPlay(play);
+                      break;
                     case "approveAutoCorrection":
                       approveAutoCorrection(play);
                       break;
@@ -490,7 +483,7 @@ export default defineComponent({
     const requestSubmitting = ref(false);
 
     const editPlay = (play: Play): void => {
-      playEdit.value = {
+      const playEdit = reactive({
         playId: play.playId,
         trackUri: play.trackUri,
         title: play.title,
@@ -498,8 +491,47 @@ export default defineComponent({
         album: play.album,
         saveCorrection: true,
         updateAllUnsubmitted: true,
+      } as EditablePlay);
+
+      const contentFunc = () => {
+        return h(EditPlayForm, {
+          "disabled": requestSubmitting.value,
+          "modelValue": playEdit,
+          "onUpdate:modelValue": (newValue: EditablePlay) => {
+            Object.assign(playEdit, newValue);
+          },
+        });
       };
-      //dialogShow.edit = true;
+      const d = dialog.info({
+        title: "Edit Play",
+        icon: () => h(SvgIconEdit),
+        bordered: true,
+        content: contentFunc,
+        negativeText: "Cancel",
+        positiveText: "Save",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          requestSubmitting.value = true;
+          const result = await masApi.editPlay(toRaw(playEdit));
+          requestSubmitting.value = false;
+          if (result === false) {
+            return;
+          }
+
+          if (playEdit.updateAllUnsubmitted === true) {
+            loadPlays();
+          } else {
+            Object.assign(play, {
+              title: playEdit.title,
+              artist: playEdit.artist,
+              album: playEdit.album,
+              corrected: Corrected.MANUALLY_CORRECTED,
+            });
+          }
+        },
+        onNegativeClick: () => d.loading === false,
+        onClose: () => () => d.loading === false,
+      });
     };
 
     const approveAutoCorrection = (play: Play): void => {
@@ -848,7 +880,6 @@ export default defineComponent({
     return {
       pageNumber,
       pageSize,
-      playEdit,
       columns,
       isFirstPage,
       selectedRowKeys,
@@ -862,8 +893,6 @@ export default defineComponent({
       goToPreviousPage,
       goToFirstPage,
       refresh,
-      editPlay,
-      scrobbleToCheckpoint,
       scrobbleUnsubmitted,
       deleteMultiSelected,
       scrobbleMultiSelected,

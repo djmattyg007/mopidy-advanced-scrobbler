@@ -26,3 +26,13 @@ export interface Correction {
   readonly title: string;
   readonly album: string;
 }
+
+export interface EditablePlay {
+  readonly playId: number;
+  readonly trackUri: string;
+  title: string;
+  artist: string;
+  album: string;
+  saveCorrection: boolean;
+  updateAllUnsubmitted: boolean;
+}
