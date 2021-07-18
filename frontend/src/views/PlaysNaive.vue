@@ -135,17 +135,17 @@ import { useAsyncTask } from "vue-concurrency";
 import {
   DataTableColumn,
   DialogReactive,
+  DropdownOption,
   NButton,
   NCard,
   NDataTable,
   NDescriptions,
   NDescriptionsItem,
+  NDropdown,
   NElement,
   NH1,
-  NPopselect,
   NText,
   NTooltip,
-  SelectOption,
   useDialog,
   useMessage,
 } from "naive-ui";
@@ -168,6 +168,7 @@ import UnixTimestamp from "@/components/UnixTimestamp.vue";
 
 import SvgIconDelete from "@/svg/delete.svg";
 import SvgIconScrobble from "@/svg/scrobble.svg";
+import SvgIconScrobbleAll from "@/svg/scrobble-all.svg";
 
 interface LoadPlaysResponse {
   readonly plays: ReadonlyArray<Play>;
@@ -249,7 +250,6 @@ export default defineComponent({
     const pageSize = 50;
     const buttonIconSize = 34;
 
-    const selectedPlay = ref(null) as Ref<Play | null>;
     const playEdit = ref(null) as Ref<EditablePlay | null>;
 
     const columns = computed(() => {
@@ -341,36 +341,53 @@ export default defineComponent({
           title: "Actions",
           key: "actions",
           sorter: false,
-          align: "right",
+          align: "center",
           width: 100,
           render(row) {
             const play = row as unknown as Play;
 
-            const options: SelectOption[] = [];
+            const options: DropdownOption[] = [];
             if (!play.submittedAt) {
               options.push(
-                { value: "edit", label: "Edit" },
-                { value: "submit", label: "Submit" },
-                { value: "delete", label: "Delete" },
-                { value: "scrobbleToHere", label: "Scrobble To Here" },
+                { key: "edit", label: "Edit" },
+                { key: "submit", label: "Submit" },
+                { key: "delete", label: "Delete" },
+                { key: "scrobbleToHere", label: "Scrobble To Here" },
               );
             }
             if (play.corrected === Corrected.AUTO_CORRECTED) {
               options.splice(1, 0, {
-                value: "approveAutoCorrection",
+                key: "approveAutoCorrection",
                 label: "Approve Auto-Correction",
               });
             }
 
             return h(
-              NPopselect,
+              NDropdown,
               {
                 "disabled": options.length === 0,
                 "options": options,
+                "trigger": "hover",
                 "placement": "left-end",
                 "size": "small",
-                "on-update:value": (value: string) => {
-                  console.log(value);
+                "on-select": (key: string) => {
+                  switch (key) {
+                    case "approveAutoCorrection":
+                      approveAutoCorrection(play);
+                      break;
+                    case "submit":
+                      submitPlay(play);
+                      break;
+                    case "delete":
+                      deletePlay(play);
+                      break;
+                    case "scrobbleToHere":
+                      scrobbleToCheckpoint(play);
+                      break;
+                    default:
+                      message.error("Unrecognised action.");
+                      break;
+                  }
                 },
               },
               {
@@ -471,7 +488,6 @@ export default defineComponent({
     const requestSubmitting = ref(false);
 
     const editPlay = (play: Play): void => {
-      selectedPlay.value = play;
       playEdit.value = {
         playId: play.playId,
         trackUri: play.trackUri,
@@ -483,25 +499,315 @@ export default defineComponent({
       };
       //dialogShow.edit = true;
     };
+
+    const submitApproveAutoCorrectionRequest = async (playId: number): Promise<boolean> => {
+      let success = false;
+      try {
+        await api.post("/approve-auto", { playId });
+        success = true;
+        message.success("Successfully approved auto-correction.");
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while approving auto-correction";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+      }
+
+      return success;
+    };
     const approveAutoCorrection = (play: Play): void => {
-      selectedPlay.value = play;
-      //dialogShow.approveAutoCorrection = true;
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+
+      const d = dialog.success({
+        title: "Approve Auto-Correction",
+        bordered: true,
+        content: "Are you sure?",
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitApproveAutoCorrectionRequest(play.playId);
+          requestSubmitting.value = false;
+          if (result === true) {
+            Object.assign(play, {
+              corrected: Corrected.MANUALLY_CORRECTED,
+            });
+          }
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
+    };
+
+    const submitDeleteRequest = async (playId: number): Promise<boolean> => {
+      let success = false;
+      try {
+        await api.post("/plays/delete", { playId });
+        success = true;
+        message.success("Successfully deleted play.");
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while deleting play";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+      }
+
+      return success;
     };
     const deletePlay = (play: Play): void => {
-      selectedPlay.value = play;
-      //dialogShow.delete = true;
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+
+      const d = dialog.warning({
+        title: "Delete Play",
+        icon: () => h(SvgIconDelete),
+        bordered: true,
+        content: "Are you sure?",
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitDeleteRequest(play.playId);
+          requestSubmitting.value = false;
+          if (result === true) {
+            loadPlays();
+          }
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
+    };
+
+    const submitSinglePlayRequest = async (playId: number): Promise<boolean> => {
+      let success = false;
+      try {
+        await api.post("/plays/submit", { playId });
+        success = true;
+        message.success("Successfully scrobbled play.");
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while scrobbling play";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+      }
+
+      return success;
     };
     const submitPlay = (play: Play): void => {
-      selectedPlay.value = play;
-      //dialogShow.submit = true;
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+
+      const d = dialog.success({
+        title: "Submit Play",
+        icon: () => h(SvgIconScrobble),
+        bordered: true,
+        content: "Are you sure?",
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitSinglePlayRequest(play.playId);
+          requestSubmitting.value = false;
+          if (result === true) {
+            Object.assign(play, {
+              submittedAt: Math.floor(Date.now() / 1000),
+            });
+          }
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
     };
+
+    const submitScrobbleUnsubmittedRequest = async (
+      checkpointId?: number,
+    ): Promise<ScrobbleResponse | null> => {
+      const params: Record<string, unknown> = {};
+      if (checkpointId) {
+        params["checkpoint"] = checkpointId;
+      }
+
+      let response: ScrobbleResponse;
+      try {
+        response = (await api.post<ScrobbleResponse>("/scrobble", params)).data;
+        message.success("Successfully scrobbled plays.");
+        return response;
+      } catch (err) {
+        console.error(err);
+
+        let errMsg = "Error while scrobbling";
+        if (err.isAxiosError && err.response && err.response.data.message) {
+          errMsg += `: ${err.response.data.message}`;
+        } else {
+          errMsg += ".";
+        }
+
+        message.error(errMsg);
+        return null;
+      }
+    };
+
     const scrobbleToCheckpoint = (play: Play): void => {
-      selectedPlay.value = play;
-      //dialogShow.scrobble = true;
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+
+      const d = dialog.success({
+        title: "Scrobble",
+        icon: () => h(SvgIconScrobbleAll),
+        bordered: true,
+        content: "Are you sure?",
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitScrobbleUnsubmittedRequest(play.playId);
+          requestSubmitting.value = false;
+          if (result === null) {
+            return;
+          }
+
+          loadPlays();
+          dialog.info({
+            title: "Success",
+            bordered: true,
+            content: () => renderScrobbleResult(result),
+            positiveText: "Close",
+          });
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
     };
 
     const scrobbleUnsubmitted = (): void => {
-      //dialogShow.scrobble = true;
+      if (requestSubmitting.value === true) {
+        message.error("A request is already pending.");
+        return;
+      }
+
+      requestSubmitting.value = true;
+
+      const d = dialog.success({
+        title: "Scrobble",
+        icon: () => h(SvgIconScrobbleAll),
+        bordered: true,
+        content: "Are you sure?",
+        negativeText: "Cancel",
+        positiveText: "Confirm",
+        onPositiveClick: async () => {
+          startDialogLoading(d);
+          const result = await submitScrobbleUnsubmittedRequest();
+          requestSubmitting.value = false;
+          if (result === null) {
+            return;
+          }
+
+          refresh();
+          dialog.info({
+            title: "Success",
+            bordered: true,
+            content: () => renderScrobbleResult(result),
+            positiveText: "Close",
+          });
+        },
+        onNegativeClick() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+        onClose() {
+          if (d.loading) {
+            return false;
+          }
+          requestSubmitting.value = false;
+          return true;
+        },
+      });
     };
 
     const submitMultiDeleteRequest = async (playIds: ReadonlyArray<number>): Promise<boolean> => {
@@ -659,7 +965,6 @@ export default defineComponent({
     return {
       pageNumber,
       pageSize,
-      selectedPlay,
       playEdit,
       columns,
       isFirstPage,
@@ -675,9 +980,6 @@ export default defineComponent({
       goToFirstPage,
       refresh,
       editPlay,
-      approveAutoCorrection,
-      deletePlay,
-      submitPlay,
       scrobbleToCheckpoint,
       scrobbleUnsubmitted,
       deleteMultiSelected,
