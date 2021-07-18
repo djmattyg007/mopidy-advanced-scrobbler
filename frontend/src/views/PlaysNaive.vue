@@ -987,7 +987,7 @@ export default defineComponent({
 
       requestSubmitting,
 
-      cardHeaderStyle, // Doesn't currently work
+      cardHeaderStyle,
       cardContentStyle,
 
       buttonIconSize,
