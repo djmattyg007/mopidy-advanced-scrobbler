@@ -154,8 +154,9 @@ import {
   useMessage,
 } from "naive-ui";
 
-import { masHttp } from "@/http";
+import { masHttp, mopidyHttp } from "@/http";
 import { MasApi, LoadPlaysResponse, ScrobbleResponse } from "@/api/mas-api";
+import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
 
 import { Play, Corrected } from "@/types";
 
@@ -236,6 +237,7 @@ export default defineComponent({
     const message = useMessage();
 
     const masApi = new MasApi(masHttp, message);
+    const mopidyApi = new MopidyApi(new JsonRpcApi(mopidyHttp), message);
 
     const pageNumber = ref(1);
     const pageSize = 50;
@@ -353,6 +355,15 @@ export default defineComponent({
               });
             }
 
+            options.push({
+              key: "playback",
+              label: "Playback",
+              children: [
+                { key: "playbackPlayNext", label: "Play Next" },
+                { key: "playbackAddToBottom", label: "Add to Bottom" },
+              ],
+            });
+
             return h(
               NDropdown,
               {
@@ -374,6 +385,12 @@ export default defineComponent({
                       break;
                     case "scrobbleToHere":
                       scrobbleToCheckpoint(play);
+                      break;
+                    case "playbackPlayNext":
+                      playNext(play);
+                      break;
+                    case "playbackAddToBottom":
+                      addToBottom(play);
                       break;
                     default:
                       message.error("Unrecognised action.");
@@ -798,6 +815,13 @@ export default defineComponent({
           return true;
         },
       });
+    };
+
+    const playNext = (play: Play): void => {
+      mopidyApi.playNext([play.trackUri]);
+    };
+    const addToBottom = (play: Play): void => {
+      mopidyApi.addToBottom([play.trackUri]);
     };
 
     const cardHeaderStyle = {
