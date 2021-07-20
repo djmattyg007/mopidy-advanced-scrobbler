@@ -5,12 +5,14 @@
     <n-card :header-style="cardHeaderStyle" :content-style="cardContentStyle">
       <template #header>
         <n-element class="mas-toolbar">
-          <span v-if="plays.value && plays.value.counts.overall >= 0">
-            <n-text strong>{{ plays.value.counts.overall }}</n-text> plays (<n-text strong>{{
-              plays.value.counts.unsubmitted
-            }}</n-text>
-            unsubmitted)
-          </span>
+          <template v-if="plays.value && plays.value.counts.overall >= 0">
+            <span style="white-space: nowrap">
+              <n-text strong>{{ plays.value.counts.overall }}</n-text> plays (<n-text strong>{{
+                plays.value.counts.unsubmitted
+              }}</n-text>
+              unsubmitted)
+            </span>
+          </template>
 
           <div class="mas-spacer"></div>
 
@@ -116,12 +118,11 @@
         <p>{{ plays.error }}</p>
         <n-data-table :columns="columns" :data="[]" table-layout="fixed" />
       </template>
-      <n-config-provider v-else :theme-overrides="dataTableThemeOverrides">
+      <n-config-provider v-else abstract :theme-overrides="dataTableThemeOverrides">
         <n-data-table
           :columns="columns"
           :data="plays.value ? plays.value.plays : []"
           table-layout="fixed"
-          font-size-medium="16px"
           :row-key="(row) => row.playId"
           v-model:checked-row-keys="selectedRowKeys"
           :loading="plays.isRunning"
@@ -159,6 +160,8 @@ import { MasApi, LoadPlaysResponse, ScrobbleResponse } from "@/api/mas-api";
 import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
 
 import { Play, Corrected, EditablePlay } from "@/types";
+
+import { useIsMobile } from "@/utils";
 
 import IconDelete from "@/icons/DeleteIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
@@ -228,14 +231,37 @@ export default defineComponent({
     const dialog = useDialog();
     const message = useMessage();
 
+    const isMobileRef = useIsMobile();
+
     const masApi = new MasApi(masHttp, message);
     const mopidyApi = new MopidyApi(new JsonRpcApi(mopidyHttp), message);
 
     const pageNumber = ref(1);
-    const pageSize = 50;
+    const pageSize = isMobileRef.value ? 20 : 50;
     const buttonIconSize = 34;
 
     const columns = computed(() => {
+      const titleCol: DataTableColumn = {
+        title: "Title",
+        key: "title",
+        sorter: false,
+      };
+      const artistCol: DataTableColumn = {
+        title: "Artist",
+        key: "artist",
+        sorter: false,
+      };
+      const albumCol: DataTableColumn = {
+        title: "Album",
+        key: "album",
+        sorter: false,
+      };
+      if (isMobileRef.value) {
+        titleCol.width = 270;
+        artistCol.width = 240;
+        albumCol.width = 250;
+      }
+
       const cols: DataTableColumn[] = [
         {
           type: "selection",
@@ -246,20 +272,18 @@ export default defineComponent({
           sorter: false,
           width: 85,
         },
+        titleCol,
+        artistCol,
+        albumCol,
         {
-          title: "Title",
-          key: "title",
+          title: "Played At",
+          key: "playedAt",
           sorter: false,
-        },
-        {
-          title: "Artist",
-          key: "artist",
-          sorter: false,
-        },
-        {
-          title: "Album",
-          key: "album",
-          sorter: false,
+          width: 195,
+          render(row) {
+            const play = row as unknown as Play;
+            return h(UnixTimestamp, { value: play.playedAt });
+          },
         },
         {
           title: "Corrected",
@@ -276,7 +300,7 @@ export default defineComponent({
 
             return h(
               NTooltip,
-              { placement: "bottom", trigger: "hover" },
+              { class: "correction-info", placement: "bottom", trigger: "hover" },
               {
                 trigger: () => h(CorrectedLabel, { value: play.corrected }),
                 default: () => {
@@ -291,16 +315,6 @@ export default defineComponent({
                 },
               },
             );
-          },
-        },
-        {
-          title: "Played At",
-          key: "playedAt",
-          sorter: false,
-          width: 195,
-          render(row) {
-            const play = row as unknown as Play;
-            return h(UnixTimestamp, { value: play.playedAt });
           },
         },
         {
@@ -361,7 +375,6 @@ export default defineComponent({
                 "options": options,
                 "trigger": "hover",
                 "placement": "left-end",
-                "size": "small",
                 "on-select": (key: string) => {
                   switch (key) {
                     case "edit":
@@ -858,6 +871,7 @@ export default defineComponent({
 
     const cardHeaderStyle = {
       "--padding-left": "12px",
+      "overflow-x": "auto",
     };
     const cardContentStyle = {
       "--padding-left": "0",

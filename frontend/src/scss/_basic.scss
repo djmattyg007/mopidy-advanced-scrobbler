@@ -1,9 +1,11 @@
+$mas-spacing: 4px;
+
 .menu-list {
   list-style: none;
 
   li {
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: $mas-spacing * 2;
+    margin-bottom: $mas-spacing * 2;
   }
 
   li:first-of-type {
@@ -20,7 +22,14 @@ dt {
 }
 
 dd {
-  margin-bottom: 4px;
+  margin-left: 0;
+  margin-bottom: $mas-spacing;
+}
+
+.correction-info {
+  dd {
+    margin-left: $mas-spacing;
+  }
 }
 
 .mas-toolbar {
@@ -33,8 +42,7 @@ dd {
 }
 
 .n-card.n-card--bordered > .n-card__content {
-  > .n-data-table.n-data-table--bordered,
-  > .n-config-provider > .n-data-table.n-data-table--bordered {
+  > .n-data-table.n-data-table--bordered {
     > .n-spin-container > .n-spin-content > .n-data-table-wrapper {
       border-width: 1px 0 0 0;
     }

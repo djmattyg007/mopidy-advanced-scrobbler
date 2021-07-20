@@ -1,9 +1,23 @@
 .root-container {
   display: flex;
   flex-direction: column;
-  max-height: 100vh;
+
+  > .n-layout {
+    overflow: revert;
+  }
 }
 
 .content-wrap {
   padding: 16px var(--side-padding, 32px);
+}
+
+.main-content {
+  margin-bottom: 50px;
+}
+
+@media only screen and (max-width: 639px) {
+  .main-content {
+    width: 100%;
+    overflow-x: hidden;
+  }
 }
