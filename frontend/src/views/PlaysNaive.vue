@@ -133,7 +133,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, h, reactive, ref, toRaw, Ref, VNode } from "vue";
+import { computed, defineComponent, h, nextTick, reactive, ref, toRaw, Ref, VNode } from "vue";
 import { useAsyncTask } from "vue-concurrency";
 import {
   DataTableColumn,
@@ -532,7 +532,7 @@ export default defineComponent({
           }
 
           if (playEdit.updateAllUnsubmitted === true) {
-            loadPlays();
+            nextTick(() => loadPlays());
           } else {
             Object.assign(play, {
               title: playEdit.title,
@@ -608,7 +608,7 @@ export default defineComponent({
           const result = await masApi.submitDelete(play.playId);
           requestSubmitting.value = false;
           if (result === true) {
-            loadPlays();
+            nextTick(() => loadPlays());
           }
         },
         onNegativeClick() {
@@ -693,12 +693,15 @@ export default defineComponent({
             return;
           }
 
-          loadPlays();
-          dialog.info({
-            title: "Success",
-            bordered: true,
-            content: () => renderScrobbleResult(result),
-            positiveText: "Close",
+          nextTick(() => {
+            dialog.info({
+              title: "Success",
+              bordered: true,
+              content: () => renderScrobbleResult(result),
+              positiveText: "Close",
+            });
+
+            nextTick(() => loadPlays());
           });
         },
         onNegativeClick() {
@@ -741,12 +744,15 @@ export default defineComponent({
             return;
           }
 
-          refresh();
-          dialog.info({
-            title: "Success",
-            bordered: true,
-            content: () => renderScrobbleResult(result),
-            positiveText: "Close",
+          nextTick(() => {
+            dialog.info({
+              title: "Success",
+              bordered: true,
+              content: () => renderScrobbleResult(result),
+              positiveText: "Close",
+            });
+
+            nextTick(() => refresh());
           });
         },
         onNegativeClick() {
@@ -790,7 +796,7 @@ export default defineComponent({
           const result = await masApi.submitMultiDelete(selectedPlayIds);
           requestSubmitting.value = false;
           if (result === true) {
-            loadPlays();
+            nextTick(() => loadPlays());
           }
         },
         onNegativeClick() {
@@ -837,12 +843,15 @@ export default defineComponent({
             return;
           }
 
-          loadPlays();
-          dialog.info({
-            title: "Success",
-            bordered: true,
-            content: () => renderScrobbleResult(result),
-            positiveText: "Close",
+          nextTick(() => {
+            dialog.info({
+              title: "Success",
+              bordered: true,
+              content: () => renderScrobbleResult(result),
+              positiveText: "Close",
+            });
+
+            nextTick(() => loadPlays());
           });
         },
         onNegativeClick() {
