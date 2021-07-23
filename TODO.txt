@@ -1,5 +1,5 @@
 TODO: Move recording of plays out into separate package that can also provide a history of plays on a day-by-day basis
 TODO: add filtering (and maybe sorting) capabilities to corrections table
 TODO: add Last.fm track/artist/album links to web interface
-TODO: add play/add to queue/play next buttons to web interface
 TODO: maybe add "now playing" display to web interface
+TODO: update "submitted" display to be more comprehensive. requires backend changes to allow marking a play as ignored rather than just deleting. change submitted column to a "status" column.
