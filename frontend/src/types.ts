@@ -36,3 +36,5 @@ export interface EditablePlay {
   saveCorrection: boolean;
   updateAllUnsubmitted: boolean;
 }
+
+export type SelectedTheme = "os-theme" | "light" | "dark";

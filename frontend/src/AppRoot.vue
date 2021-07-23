@@ -1,12 +1,12 @@
 <template>
   <n-config-provider
-    :theme="theme"
+    :theme="actualTheme"
     :theme-overrides="themeOverrides"
     namespace="advanced-scrobbler"
   >
     <n-message-provider>
       <n-dialog-provider>
-        <App />
+        <App :selected-theme="selectedTheme" @theme-selected="handleThemeChange" />
       </n-dialog-provider>
     </n-message-provider>
     <n-global-style />
@@ -14,7 +14,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent } from "vue";
+import { computed, defineComponent, ref, Ref } from "vue";
 import { useOsTheme, darkTheme } from "naive-ui";
 import {
   GlobalThemeOverrides,
@@ -25,6 +25,8 @@ import {
 } from "naive-ui";
 
 import App from "./App.vue";
+
+import type { SelectedTheme } from "@/types";
 
 export default defineComponent({
   name: "AppRoot",
@@ -37,8 +39,22 @@ export default defineComponent({
   },
   setup() {
     const osThemeRef = useOsTheme();
+    const selectedTheme = ref("os-theme") as Ref<SelectedTheme>;
+    const handleThemeChange = (newTheme: SelectedTheme): void => {
+      selectedTheme.value = newTheme;
+    };
 
-    const theme = computed(() => (osThemeRef.value === "dark" ? darkTheme : null));
+    const actualTheme = computed(() => {
+      switch (selectedTheme.value) {
+        case "dark":
+          return darkTheme;
+        case "light":
+          return null;
+        case "os-theme":
+        default:
+          return osThemeRef.value === "dark" ? darkTheme : null;
+      }
+    });
     const themeOverrides = computed((): GlobalThemeOverrides => {
       return {
         common: {
@@ -48,9 +64,10 @@ export default defineComponent({
     });
 
     return {
-      theme,
+      selectedTheme,
+      handleThemeChange,
+      actualTheme,
       themeOverrides,
-      osTheme: osThemeRef,
     };
   },
 });
