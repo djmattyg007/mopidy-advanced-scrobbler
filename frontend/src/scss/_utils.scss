@@ -32,6 +32,18 @@ $mas-spacing: 4px;
   margin-right: $mas-spacing * 2;
 }
 
+.mas-mb2 {
+  margin-bottom: $mas-spacing * 2;
+}
+
 .mas-ml3 {
   margin-left: $mas-spacing * 3;
+}
+
+.mas-px3 {
+  padding: $mas-spacing * 3;
+}
+
+.text-center {
+  text-align: center;
 }

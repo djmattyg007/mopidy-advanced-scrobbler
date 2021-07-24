@@ -115,8 +115,20 @@
       </template>
 
       <template v-if="plays.error">
-        <p>{{ plays.error }}</p>
-        <n-data-table :columns="columns" :data="[]" table-layout="fixed" />
+        <n-data-table :columns="columns" :data="[]" table-layout="fixed">
+          <template #empty>
+            <div class="mas-px3">
+              <div class="text-center mas-mb2">
+                <n-text strong style="font-size: 24px"
+                  >An error occurred while fetching data.</n-text
+                >
+              </div>
+              <div>
+                <n-text code>{{ plays.error }}</n-text>
+              </div>
+            </div>
+          </template>
+        </n-data-table>
       </template>
       <n-config-provider v-else abstract :theme-overrides="dataTableThemeOverrides">
         <n-data-table
