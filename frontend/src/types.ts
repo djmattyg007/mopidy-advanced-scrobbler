@@ -38,3 +38,4 @@ export interface EditablePlay {
 }
 
 export type SelectedTheme = "os-theme" | "light" | "dark";
+export type ActualTheme = "light" | "dark";

@@ -19,7 +19,7 @@ const svgPaths: [string, string][] = [
   ["step-backward", `${mdi}/step-backward.svg`],
   ["step-forward", `${mdi}/step-forward.svg`],
   ["theme-auto", `${mdi}/brightness-auto.svg`],
-  ["theme-dark", `${mdi}/brightness-1.svg`],
+  ["theme-dark", `${mdi}/brightness-2.svg`],
   ["theme-light", `${mdi}/brightness-5.svg`],
   ["tick", `${mdi}/check.svg`],
 ];

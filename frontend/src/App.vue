@@ -1,11 +1,11 @@
 <template>
-  <div class="root-container">
+  <div :class="rootContainerClass">
     <n-layout>
       <n-layout-header bordered class="nav" :style="headerStyle">
         <n-text class="app-title">Advanced Scrobbler</n-text>
         <n-space class="mas-spacer" justify="end">
           <n-dropdown trigger="click" :options="themeDropdownOptions" @select="handleThemeSelect">
-            <n-button>
+            <n-button style="--height: 90%">
               <template v-if="selectedTheme === 'os-theme'" #icon>
                 <theme-auto-icon />
               </template>
@@ -51,7 +51,7 @@ import ThemeAutoIcon from "@/icons/ThemeAutoIcon.vue";
 import ThemeDarkIcon from "@/icons/ThemeDarkIcon.vue";
 import ThemeLightIcon from "@/icons/ThemeLightIcon.vue";
 
-import type { SelectedTheme } from "@/types";
+import type { SelectedTheme, ActualTheme } from "@/types";
 
 export default defineComponent({
   name: "App",
@@ -72,10 +72,14 @@ export default defineComponent({
     selectedTheme: {
       type: String as PropType<SelectedTheme>,
       required: true,
-    }
+    },
+    actualThemeName: {
+      type: String as PropType<ActualTheme>,
+      required: true,
+    },
   },
   emits: ["theme-selected"],
-  setup(_props, { emit }) {
+  setup(props, { emit }) {
     const isMobileRef = useIsMobile();
 
     const layoutContentStyle = {
@@ -104,23 +108,47 @@ export default defineComponent({
       emit("theme-selected", key);
     };
 
+    const rootContainerClass = computed(() => {
+      const classes = ["root-container"];
+      switch (props.actualThemeName) {
+        case "light":
+          classes.push("app-theme-light");
+          break;
+        case "dark":
+          classes.push("app-theme-dark");
+          break;
+        default:
+          throw new Error("Unrecognised theme selected.");
+      }
+      return classes;
+    });
+
     return {
       headerStyle: paddingStyle,
       contentWrapStyle: paddingStyle,
       layoutContentStyle,
       themeDropdownOptions,
       handleThemeSelect,
+      rootContainerClass,
     };
   },
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .nav {
   display: flex;
   padding: 6px var(--side-padding) 0;
-  background-color: rgb(227, 242, 253);
+
+  .app-theme-light & {
+    background-color: #e8ecef;
+  }
+
+  .app-theme-dark & {
+    background-color: #465158;
+  }
 }
+
 .app-title {
   font-size: 22px;
   font-weight: var(--font-weight-strong);

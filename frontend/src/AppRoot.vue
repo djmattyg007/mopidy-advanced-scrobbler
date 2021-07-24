@@ -6,7 +6,11 @@
   >
     <n-message-provider>
       <n-dialog-provider>
-        <App :selected-theme="selectedTheme" @theme-selected="handleThemeChange" />
+        <App
+          :selected-theme="selectedTheme"
+          :actual-theme-name="actualThemeName"
+          @theme-selected="handleThemeChange"
+        />
       </n-dialog-provider>
     </n-message-provider>
     <n-global-style />
@@ -44,15 +48,23 @@ export default defineComponent({
       selectedTheme.value = newTheme;
     };
 
-    const actualTheme = computed(() => {
+    const actualThemeName = computed(() => {
       switch (selectedTheme.value) {
         case "dark":
-          return darkTheme;
         case "light":
-          return null;
+          return selectedTheme.value;
         case "os-theme":
         default:
-          return osThemeRef.value === "dark" ? darkTheme : null;
+          return osThemeRef.value === "dark" ? "dark" : "light";
+      }
+    });
+    const actualTheme = computed(() => {
+      if (actualThemeName.value === "light") {
+        return null;
+      } else if (actualThemeName.value === "dark") {
+        return darkTheme;
+      } else {
+        throw new Error("Unrecognised theme selected.");
       }
     });
     const themeOverrides = computed((): GlobalThemeOverrides => {
@@ -66,6 +78,7 @@ export default defineComponent({
     return {
       selectedTheme,
       handleThemeChange,
+      actualThemeName,
       actualTheme,
       themeOverrides,
     };
