@@ -39,3 +39,11 @@ export interface EditablePlay {
 
 export type SelectedTheme = "os-theme" | "light" | "dark";
 export type ActualTheme = "light" | "dark";
+
+export function sanitiseSelectedTheme(userInput: string): SelectedTheme {
+  if (userInput === "os-theme" || userInput === "light" || userInput === "dark") {
+    return userInput;
+  }
+
+  return "os-theme";
+}

@@ -9044,6 +9044,11 @@ vue-concurrency@^2.1.2:
   dependencies:
     caf "^9.0.0"
 
+vue-cookie-next@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/vue-cookie-next/-/vue-cookie-next-1.2.0.tgz#7f9268a699aa943f63bf6ebc878ba22db488cfda"
+  integrity sha512-6nvb89NaGtxKmm7xyirjt/VacEmB/lOd5BJAlxbH0qYHaQH4ysQckN1UGU1oo3DBZBpA5Z+VfLnlcAVStqmTcQ==
+
 vue-demi@^0.6.0:
   version "0.6.2"
   resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.6.2.tgz#ed9633eaa69b7409cc6e8328e8a6c3d31ab39319"

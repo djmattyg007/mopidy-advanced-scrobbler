@@ -30,7 +30,11 @@ import {
 
 import App from "./App.vue";
 
-import type { SelectedTheme } from "@/types";
+import { useCookie } from "@/cookie";
+
+import { sanitiseSelectedTheme, ActualTheme, SelectedTheme } from "@/types";
+
+const SelectedThemeCookieName = "selectedTheme";
 
 export default defineComponent({
   name: "AppRoot",
@@ -42,13 +46,18 @@ export default defineComponent({
     NMessageProvider,
   },
   setup() {
-    const osThemeRef = useOsTheme();
-    const selectedTheme = ref("os-theme") as Ref<SelectedTheme>;
+    const cookie = useCookie();
+
+    const preselectedTheme = cookie.getCookie(SelectedThemeCookieName);
+    const selectedTheme = ref(sanitiseSelectedTheme(preselectedTheme)) as Ref<SelectedTheme>;
     const handleThemeChange = (newTheme: SelectedTheme): void => {
+      newTheme = sanitiseSelectedTheme(newTheme);
       selectedTheme.value = newTheme;
+      cookie.setCookie(SelectedThemeCookieName, newTheme);
     };
 
-    const actualThemeName = computed(() => {
+    const osThemeRef = useOsTheme();
+    const actualThemeName = computed((): ActualTheme => {
       switch (selectedTheme.value) {
         case "dark":
         case "light":
