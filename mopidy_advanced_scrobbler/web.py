@@ -10,23 +10,45 @@ import tornado.web
 from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
 
 from mopidy_advanced_scrobbler.db import DbClientError, SortDirectionEnum, db_service
-from mopidy_advanced_scrobbler.models import (
-    CorrectionEdit,
-    PlayEdit,
-    RecordedPlay,
-    correction_schema,
-    recorded_play_schema,
-)
 from mopidy_advanced_scrobbler.network import NetworkException, network_service
+from mopidy_advanced_scrobbler.serial import (
+    CorrectionSchema,
+    CorrectionEditSchema,
+    PlayEditSchema,
+    RecordedPlaySchema,
+)
 
 from ._service import ActorRetrievalFailure
 
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Type
+
+    from marshmallow import Schema, fields
 
 
 logger = logging.getLogger(__name__)
+
+
+def camelcase(s: str) -> str:
+    parts = iter(s.split("_"))
+    return next(parts) + "".join(p.title() for p in parts)
+
+
+class CamelCaseSchema(object):
+    def on_bind_field(self, field_name: str, field_obj: fields.Field):
+        field_obj.data_key = camelcase(field_obj.data_key or field_name)
+
+
+def make_camelcase_schema(schema: Type[Schema]) -> Type[Schema]:
+    return type("CamelCase" + schema.__name__, (CamelCaseSchema, schema), dict())
+
+
+correction_schema = make_camelcase_schema(CorrectionSchema)()
+correction_edit_schema = make_camelcase_schema(CorrectionEditSchema)()
+play_edit_schema = make_camelcase_schema(PlayEditSchema)()
+recorded_play_schema = make_camelcase_schema(RecordedPlaySchema)()
 
 
 class OverrideStaticFileHandler(StaticFileHandler):
@@ -175,7 +197,7 @@ class ApiPlayEdit(_BaseJsonPostHandler):
             return
 
         try:
-            play_edit = PlayEdit.from_dict(data["play"])
+            play_edit = play_edit_schema.load(data["play"])
         except Exception:
             self.set_status(400)
             self.write({"success": False, "message": "Invalid play data."})
@@ -403,7 +425,7 @@ class ApiCorrectionEdit(_BaseJsonPostHandler):
             return
 
         try:
-            correction_edit = CorrectionEdit.from_dict(data["correction"])
+            correction_edit = correction_edit_schema.load(data["correction"])
         except Exception:
             self.set_status(400)
             self.write({"success": False, "message": "Invalid correction data."})

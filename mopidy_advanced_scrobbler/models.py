@@ -3,7 +3,6 @@ from enum import IntEnum
 from typing import Mapping, Optional, Tuple
 from urllib.parse import urlparse
 
-from dataclasses_json import LetterCase, dataclass_json
 from mopidy.models import Track
 from music_metadata_filter.filter import MetadataFilter
 from music_metadata_filter.filters import make_remastered_filter
@@ -22,7 +21,6 @@ class Corrected(IntEnum):
     AUTO_CORRECTED = 2
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class Play(object):
     track_uri: str
@@ -39,13 +37,11 @@ class Play(object):
     submitted_at: Optional[int]  # UNIX timestamp
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class RecordedPlay(Play):
     play_id: int
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class PlayEdit(object):
     play_id: int
@@ -57,7 +53,6 @@ class PlayEdit(object):
     update_all_unsubmitted: bool
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class Correction(object):
     track_uri: str
@@ -66,7 +61,6 @@ class Correction(object):
     album: str
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclasses.dataclass(frozen=True)
 class CorrectionEdit(object):
     track_uri: str
@@ -74,12 +68,6 @@ class CorrectionEdit(object):
     title: str
     album: str
     update_all_unsubmitted: bool
-
-
-play_schema = Play.schema()
-recorded_play_schema = RecordedPlay.schema()
-play_edit_schema = PlayEdit.schema()
-correction_schema = Correction.schema()
 
 
 def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
@@ -126,7 +114,7 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
     data["played_at"] = played_at
     data["submitted_at"] = None
 
-    return Play.from_dict(data)
+    return Play(**data)
 
 
 def format_track_artists(track: Track) -> str:

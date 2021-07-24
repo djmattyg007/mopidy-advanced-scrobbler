@@ -16,13 +16,15 @@ if TYPE_CHECKING:
     from typing import Collection, List, Optional
 
 from mopidy_advanced_scrobbler import Extension
-from mopidy_advanced_scrobbler.models import (
+from mopidy_advanced_scrobbler.serial import (
     Corrected,
     Correction,
     CorrectionEdit,
     Play,
     PlayEdit,
     RecordedPlay,
+    correction_schema,
+    recorded_play_schema,
 )
 
 
@@ -135,7 +137,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         result = cursor.fetchone()
 
         if result:
-            return RecordedPlay.from_dict(result)
+            return recorded_play_schema.load(result)
         else:
             return None
 
@@ -159,9 +161,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         log_query(query)
         cursor = conn.execute(query, args)
 
-        plays: List[RecordedPlay] = []
-        for row in cursor:
-            plays.append(RecordedPlay.from_dict(row))
+        plays: List[RecordedPlay] = recorded_play_schema.load(cursor, many=True)
 
         return tuple(plays)
 
@@ -182,9 +182,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         log_query(query)
         cursor = conn.execute(query)
 
-        plays: List[RecordedPlay] = []
-        for row in cursor:
-            plays.append(RecordedPlay.from_dict(row))
+        plays: List[RecordedPlay] = recorded_play_schema.load(cursor, many=True)
 
         return tuple(plays)
 
@@ -200,9 +198,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         log_query(query)
         cursor = conn.execute(query)
 
-        plays: List[RecordedPlay] = []
-        for row in cursor:
-            plays.append(RecordedPlay.from_dict(row))
+        plays: List[RecordedPlay] = recorded_play_schema.load(cursor, many=True)
 
         return tuple(plays)
 
@@ -357,7 +353,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         result = cursor.fetchone()
 
         if result:
-            return Correction.from_dict(result)
+            return correction_schema.load(result)
         else:
             return None
 
@@ -371,9 +367,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
         log_query(query)
         cursor = conn.execute(query)
 
-        corrections: List[Correction] = []
-        for row in cursor:
-            corrections.append(Correction.from_dict(row))
+        corrections: List[Correction] = correction_schema.load(cursor, many=True)
 
         return tuple(corrections)
 
