@@ -12,8 +12,8 @@ from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_hea
 from mopidy_advanced_scrobbler.db import DbClientError, SortDirectionEnum, db_service
 from mopidy_advanced_scrobbler.network import NetworkException, network_service
 from mopidy_advanced_scrobbler.serial import (
-    CorrectionSchema,
     CorrectionEditSchema,
+    CorrectionSchema,
     PlayEditSchema,
     RecordedPlaySchema,
 )

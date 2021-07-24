@@ -1,7 +1,9 @@
-from marshmallow import Schema as BaseSchema, SchemaOpts as BaseSchemaOpts, fields, validate
+from marshmallow import Schema as BaseSchema
+from marshmallow import SchemaOpts as BaseSchemaOpts
+from marshmallow import fields, validate
 from marshmallow_enum import EnumField
 
-from .models import Corrected, Play, RecordedPlay, PlayEdit, Correction, CorrectionEdit
+from .models import Corrected, Correction, CorrectionEdit, Play, PlayEdit, RecordedPlay
 
 
 class SchemaOpts(BaseSchemaOpts):
