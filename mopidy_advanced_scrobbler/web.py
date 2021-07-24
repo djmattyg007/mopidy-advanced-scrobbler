@@ -15,6 +15,7 @@ from mopidy_advanced_scrobbler.serial import (
     CorrectionEditSchema,
     CorrectionSchema,
     PlayEditSchema,
+    RecordedPlay,
     RecordedPlaySchema,
 )
 
