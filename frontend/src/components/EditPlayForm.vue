@@ -1,5 +1,5 @@
 <template>
-  <n-form :model="formValue">
+  <n-form :model="formValue" :id="formId" :on-submit="handleFormSubmit">
     <n-form-item label="Title" path="title">
       <n-input v-model:value="formValue.title" :disabled="disabled" />
     </n-form-item>
@@ -15,6 +15,13 @@
     <n-checkbox v-model:checked="formValue.updateAllUnsubmitted" :disabled="disabled"
       >Update All Unsubmitted Plays</n-checkbox
     >
+
+    <!-- Make submission with enter work correctly -->
+    <input
+      type="submit"
+      style="position: absolute; left: -9999px; width: 1px; height: 1px"
+      tabindex="-1"
+    />
   </n-form>
 </template>
 
@@ -40,9 +47,13 @@ export default defineComponent({
     disabled: {
       type: Boolean,
       default: false,
-    }
+    },
+    formId: {
+      type: String,
+      default: "form-edit-play",
+    },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "submitted"],
   setup(props, { emit }) {
     const formValue = reactive(Object.assign({}, props.modelValue));
     watch(
@@ -53,7 +64,12 @@ export default defineComponent({
       { deep: true },
     );
 
-    return { formValue };
+    const handleFormSubmit = (e: Event): void => {
+      e.preventDefault();
+      emit("submitted", e);
+    };
+
+    return { formValue, handleFormSubmit };
   },
 });
 </script>

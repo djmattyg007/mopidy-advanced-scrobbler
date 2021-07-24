@@ -513,7 +513,31 @@ export default defineComponent({
           "onUpdate:modelValue": (newValue: EditablePlay) => {
             Object.assign(playEdit, newValue);
           },
+          "onSubmitted": async () => {
+            await submitFunc();
+            d.destroy();
+          },
         });
+      };
+      const submitFunc = async () => {
+        startDialogLoading(d);
+        requestSubmitting.value = true;
+        const result = await masApi.editPlay(toRaw(playEdit));
+        requestSubmitting.value = false;
+        if (result === false) {
+          return;
+        }
+
+        if (playEdit.updateAllUnsubmitted === true) {
+          nextTick(() => loadPlays());
+        } else {
+          Object.assign(play, {
+            title: playEdit.title,
+            artist: playEdit.artist,
+            album: playEdit.album,
+            corrected: Corrected.MANUALLY_CORRECTED,
+          });
+        }
       };
       const d = dialog.info({
         title: "Edit Play",
@@ -522,28 +546,11 @@ export default defineComponent({
         content: contentFunc,
         negativeText: "Cancel",
         positiveText: "Save",
-        onPositiveClick: async () => {
-          startDialogLoading(d);
-          requestSubmitting.value = true;
-          const result = await masApi.editPlay(toRaw(playEdit));
-          requestSubmitting.value = false;
-          if (result === false) {
-            return;
-          }
-
-          if (playEdit.updateAllUnsubmitted === true) {
-            nextTick(() => loadPlays());
-          } else {
-            Object.assign(play, {
-              title: playEdit.title,
-              artist: playEdit.artist,
-              album: playEdit.album,
-              corrected: Corrected.MANUALLY_CORRECTED,
-            });
-          }
+        onPositiveClick: () => {
+          return submitFunc();
         },
-        onNegativeClick: () => d.loading === false,
-        onClose: () => () => d.loading === false,
+        onNegativeClick: () => d.loading !== true,
+        onClose: () => d.loading !== true,
       });
     };
 
