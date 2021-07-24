@@ -3,7 +3,6 @@ include *.rst
 include LICENSE
 include MANIFEST.in
 include pyproject.toml
-include tox.ini
 
 include mopidy_advanced_scrobbler/ext.conf
 
