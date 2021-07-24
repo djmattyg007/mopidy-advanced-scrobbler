@@ -24,8 +24,8 @@ class Corrected(IntEnum):
 @dataclasses.dataclass(frozen=True)
 class Play(object):
     track_uri: str
-    artist: str
     title: str
+    artist: str
     album: str
     orig_artist: str
     orig_title: str
@@ -56,44 +56,44 @@ class PlayEdit(object):
 @dataclasses.dataclass(frozen=True)
 class Correction(object):
     track_uri: str
-    artist: str
     title: str
+    artist: str
     album: str
 
 
 @dataclasses.dataclass(frozen=True)
 class CorrectionEdit(object):
     track_uri: str
-    artist: str
     title: str
+    artist: str
     album: str
     update_all_unsubmitted: bool
 
 
 def prepare_play(track: Track, played_at: int, correction: Optional[Correction]) -> Play:
     track_uri = track.uri
-    orig_artist, orig_title, orig_album = format_track_data(track)
+    orig_title, orig_artist, orig_album = format_track_data(track)
 
     if correction:
-        artist = correction.artist
         title = correction.title
+        artist = correction.artist
         album = correction.album or ""
         corrected = Corrected.MANUALLY_CORRECTED
     else:
         track_uri_parsed = urlparse(track_uri)
         metadata_filter = metadata_filters_mapping.get(track_uri_parsed.scheme, None)
         if metadata_filter:
-            artist, title, album, corrected = apply_metadata_filter(
+            title, artist, album, corrected = apply_metadata_filter(
                 metadata_filter, orig_artist, orig_title, orig_album
             )
         else:
-            artist, title, album = orig_artist, orig_title, orig_album
+            title, artist, album = orig_title, orig_artist, orig_album
             corrected = Corrected.NOT_CORRECTED
 
     data = {
         "track_uri": track_uri,
-        "artist": artist,
         "title": title,
+        "artist": artist,
         "album": album,
         "orig_artist": orig_artist,
         "orig_title": orig_title,
@@ -139,14 +139,14 @@ def format_track_artists(track: Track) -> str:
 
 
 def format_track_data(track: Track) -> Tuple[str, str, str]:
-    artist = format_track_artists(track)
     title = track.name or ""
+    artist = format_track_artists(track)
     if track.album and track.album.name:
         album = track.album.name
     else:
         album = ""
 
-    return artist, title, album
+    return title, artist, album
 
 
 def apply_metadata_filter(
@@ -154,9 +154,9 @@ def apply_metadata_filter(
     orig_artist: str,
     orig_title: str,
     orig_album: str,
-):
-    artist = metadata_filter.filter_field("artist", orig_artist)
+) -> Tuple[str, str, str, Corrected]:
     title = metadata_filter.filter_field("track", orig_title)
+    artist = metadata_filter.filter_field("artist", orig_artist)
     album = metadata_filter.filter_field("album", orig_album)
 
     if artist != orig_artist or title != orig_title or album != orig_album:
@@ -164,4 +164,4 @@ def apply_metadata_filter(
     else:
         corrected = Corrected.NOT_CORRECTED
 
-    return artist, title, album, corrected
+    return title, artist, album, corrected
