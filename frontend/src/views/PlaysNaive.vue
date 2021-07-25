@@ -175,6 +175,10 @@ import { Play, Corrected, EditablePlay } from "@/types";
 
 import { useIsMobile, useIsTablet } from "@/utils";
 
+import CorrectedLabel from "@/components/CorrectedLabel.vue";
+import UnixTimestamp from "@/components/UnixTimestamp.vue";
+import EditPlayForm from "@/components/EditPlayForm.vue";
+
 import IconDelete from "@/icons/DeleteIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
 import IconScrobble from "@/icons/ScrobbleIcon.vue";
@@ -183,10 +187,6 @@ import IconSkipBackward from "@/icons/SkipBackwardIcon.vue";
 import IconStepBackward from "@/icons/StepBackwardIcon.vue";
 import IconStepForward from "@/icons/StepForwardIcon.vue";
 import IconTick from "@/icons/TickIcon.vue";
-
-import CorrectedLabel from "@/components/CorrectedLabel.vue";
-import UnixTimestamp from "@/components/UnixTimestamp.vue";
-import EditPlayForm from "@/components/EditPlayForm.vue";
 
 import SvgIconDelete from "@/svg/delete.svg";
 import SvgIconEdit from "@/svg/edit.svg";

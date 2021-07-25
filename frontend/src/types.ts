@@ -7,11 +7,11 @@ export enum Corrected {
 export interface Play {
   readonly playId: number; // Integer
   readonly trackUri: string;
-  readonly artist: string;
   readonly title: string;
+  readonly artist: string;
   readonly album: string;
-  readonly origArtist: string;
   readonly origTitle: string;
+  readonly origArtist: string;
   readonly origAlbum: string;
   readonly corrected: Corrected;
   readonly musicbrainzId: string | null;
@@ -22,8 +22,8 @@ export interface Play {
 
 export interface Correction {
   readonly trackUri: string;
-  readonly artist: string;
   readonly title: string;
+  readonly artist: string;
   readonly album: string;
 }
 
