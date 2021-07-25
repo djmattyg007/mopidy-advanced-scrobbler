@@ -20,6 +20,7 @@
 <script lang="ts">
 import { computed, defineComponent, ref, Ref } from "vue";
 import { useOsTheme, darkTheme } from "naive-ui";
+import { lightTheme } from "naive-ui/es/themes/light";
 import {
   GlobalThemeOverrides,
   NConfigProvider,
@@ -69,7 +70,7 @@ export default defineComponent({
     });
     const actualTheme = computed(() => {
       if (actualThemeName.value === "light") {
-        return null;
+        return lightTheme;
       } else if (actualThemeName.value === "dark") {
         return darkTheme;
       } else {
