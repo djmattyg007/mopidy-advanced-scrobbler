@@ -101,8 +101,8 @@ export default defineComponent({
 
     const themeDropdownOptions = [
       { key: "os-theme", label: "Auto" },
-      { key: "dark", label: "Dark" },
       { key: "light", label: "Light" },
+      { key: "dark", label: "Dark" },
     ];
     const handleThemeSelect = (key: SelectedTheme): void => {
       emit("theme-selected", key);
