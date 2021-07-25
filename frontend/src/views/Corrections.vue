@@ -126,9 +126,9 @@ import {
   useMessage,
 } from "naive-ui";
 
-import { masHttp } from "@/http";
+import { masHttp, mopidyHttp } from "@/http";
 import { MasApi, LoadCorrectionsResponse } from "@/api/mas-api";
-//import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
+import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
 
 import { Correction, EditableCorrection } from "@/types";
 
@@ -174,7 +174,7 @@ export default defineComponent({
     const isTabletRef = useIsTablet();
 
     const masApi = new MasApi(masHttp, message);
-    //const mopidyApi = new MopidyApi(new JsonRpcApi(mopidyHttp), message);
+    const mopidyApi = new MopidyApi(new JsonRpcApi(mopidyHttp), message);
 
     const pageNumber = ref(1);
     const pageSize = isMobileRef.value || isTabletRef.value ? 20 : 50;
@@ -258,6 +258,14 @@ export default defineComponent({
             const options: DropdownOption[] = [
               { key: "edit", label: "Edit" },
               { key: "delete", label: "Delete" },
+              {
+                key: "playback",
+                label: "Playback",
+                children: [
+                  { key: "playbackPlayNext", label: "Play Next" },
+                  { key: "playbackAddToBottom", label: "Add to Bottom" },
+                ],
+              }
             ];
 
             return h(
@@ -274,6 +282,12 @@ export default defineComponent({
                       break;
                     case "delete":
                       deleteCorrection(correction);
+                      break;
+                    case "playbackPlayNext":
+                      playNext(correction);
+                      break;
+                    case "playbackAddToBottom":
+                      addToBottom(correction);
                       break;
                     default:
                       message.error("Unrecognised action.");
@@ -431,6 +445,13 @@ export default defineComponent({
           return true;
         },
       });
+    };
+
+    const playNext = (correction: Correction): void => {
+      mopidyApi.playNext([correction.trackUri]);
+    };
+    const addToBottom = (correction: Correction): void => {
+      mopidyApi.addToBottom([correction.trackUri]);
     };
 
     const cardHeaderStyle = {
