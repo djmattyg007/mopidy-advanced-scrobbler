@@ -265,7 +265,7 @@ export default defineComponent({
                   { key: "playbackPlayNext", label: "Play Next" },
                   { key: "playbackAddToBottom", label: "Add to Bottom" },
                 ],
-              }
+              },
             ];
 
             return h(
@@ -308,7 +308,7 @@ export default defineComponent({
               },
             );
           },
-        }
+        },
       ];
 
       return cols;
@@ -370,7 +370,7 @@ export default defineComponent({
           "onSubmitted": async () => {
             await submitFunc();
             d.destroy();
-          }
+          },
         });
       };
       const submitFunc = async () => {
@@ -496,7 +496,7 @@ export default defineComponent({
       iconButtonStyles,
 
       dataTableThemeOverrides,
-    }
+    };
   },
 });
 </script>
