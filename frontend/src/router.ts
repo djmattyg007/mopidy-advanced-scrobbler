@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 
-import Plays from "@/views/PlaysNaive.vue";
-import Corrections from "@/views/CorrectionsNaive.vue";
+import Plays from "@/views/Plays.vue";
+import Corrections from "@/views/Corrections.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
