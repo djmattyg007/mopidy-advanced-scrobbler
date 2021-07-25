@@ -19,7 +19,6 @@ export default defineComponent({
       {
         label: "Corrections",
         key: "corrections",
-        disabled: true,
       },
     ];
 
