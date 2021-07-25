@@ -17,7 +17,7 @@ what the existing Mopidy Scrobbler extension provides:
 - Delete scrobbles before they're submitted
 - Automatic cleaning of song metadata (provided by
   `music-metadata-filter <https://github.com/djmattyg007/music-metadata-filter>`_ package)
-- Manually edit song metadatad
+- Manually edit song metadata
 - Completely ignore tracks played by specific extensions
 
 **Important**: Out of the box, this extension won't automatically scrobble the
