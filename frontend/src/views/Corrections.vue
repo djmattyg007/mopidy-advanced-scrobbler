@@ -431,7 +431,7 @@ export default defineComponent({
           return true;
         },
       });
-    }
+    };
 
     const cardHeaderStyle = {
       "--padding-left": "12px",
