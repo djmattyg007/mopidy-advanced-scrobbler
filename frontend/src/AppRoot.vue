@@ -28,10 +28,9 @@ import {
   NGlobalStyle,
   NMessageProvider,
 } from "naive-ui";
+import { useCookie } from "vue-cookie-next";
 
 import App from "./App.vue";
-
-import { useCookie } from "@/cookie";
 
 import { sanitiseSelectedTheme, ActualTheme, SelectedTheme } from "@/types";
 

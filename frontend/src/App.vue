@@ -9,11 +9,11 @@
               <template v-if="selectedTheme === 'os-theme'" #icon>
                 <theme-auto-icon />
               </template>
-              <template v-else-if="selectedTheme === 'dark'" #icon>
-                <theme-dark-icon />
-              </template>
               <template v-else-if="selectedTheme === 'light'" #icon>
                 <theme-light-icon />
+              </template>
+              <template v-else-if="selectedTheme === 'dark'" #icon>
+                <theme-dark-icon />
               </template>
             </n-button>
           </n-dropdown>
