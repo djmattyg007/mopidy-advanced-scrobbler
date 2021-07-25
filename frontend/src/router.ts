@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 
 import Plays from "@/views/PlaysNaive.vue";
-//import Corrections from "@/views/Corrections.vue";
+import Corrections from "@/views/CorrectionsNaive.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -10,11 +10,11 @@ const routes: Array<RouteRecordRaw> = [
     component: Plays,
     alias: "/plays",
   },
-  /*{
+  {
     path: "/corrections",
     name: "corrections",
     component: Corrections,
-  },*/
+  },
 ];
 
 const router = createRouter({

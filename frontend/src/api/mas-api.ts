@@ -1,7 +1,7 @@
 import type { AxiosError, AxiosInstance } from "axios";
 
 import { isAxiosError } from "@/http";
-import type { Play, EditablePlay } from "@/types";
+import type { Play, EditablePlay, Correction, EditableCorrection } from "@/types";
 
 interface Notifier {
   success(message: string): void;
@@ -14,6 +14,13 @@ export interface LoadPlaysResponse {
   readonly counts: {
     readonly overall: number;
     readonly unsubmitted: number;
+  };
+}
+
+export interface LoadCorrectionsResponse {
+  readonly corrections: ReadonlyArray<Correction>;
+  readonly counts: {
+    readonly overall: number;
   };
 }
 
@@ -57,6 +64,19 @@ export class MasApi {
     return response.data;
   }
 
+  public async loadCorrections(
+    pageNumber: number,
+    pageSize: number,
+  ): Promise<LoadCorrectionsResponse> {
+    const response = await this.http.get<LoadCorrectionsResponse>("/corrections/load", {
+      params: {
+        page: pageNumber,
+        page_size: pageSize,
+      },
+    });
+    return response.data;
+  }
+
   public async editPlay(play: Readonly<EditablePlay>): Promise<boolean> {
     let success = false;
     try {
@@ -83,7 +103,7 @@ export class MasApi {
     return success;
   }
 
-  public async submitDelete(playId: number): Promise<boolean> {
+  public async deletePlay(playId: number): Promise<boolean> {
     let success = false;
     try {
       await this.http.post("/plays/delete", { playId });
@@ -151,5 +171,31 @@ export class MasApi {
       this.handleError("Error while scrobbling", err);
       return null;
     }
+  }
+
+  public async editCorrection(correction: Readonly<EditableCorrection>): Promise<boolean> {
+    let success = false;
+    try {
+      await this.http.post("/corrections/edit", { correction });
+      success = true;
+      this.notifier.success("Successfully updated correction.");
+    } catch (err) {
+      this.handleError("Error while updating correction", err);
+    }
+
+    return success;
+  }
+
+  public async deleteCorrection(trackUri: string): Promise<boolean> {
+    let success = false;
+    try {
+      await this.http.post("/corrections/delete", { trackUri });
+      success = true;
+      this.notifier.success("Successfully deleted correction.");
+    } catch (err) {
+      this.handleError("Error while deleting correction", err);
+    }
+
+    return success;
   }
 }

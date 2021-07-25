@@ -173,7 +173,7 @@ import { JsonRpcApi, MopidyApi } from "@/api/mopidy-api";
 
 import { Play, Corrected, EditablePlay } from "@/types";
 
-import { useIsMobile } from "@/utils";
+import { useIsMobile, useIsTablet } from "@/utils";
 
 import IconDelete from "@/icons/DeleteIcon.vue";
 import IconRefresh from "@/icons/RefreshIcon.vue";
@@ -244,12 +244,13 @@ export default defineComponent({
     const message = useMessage();
 
     const isMobileRef = useIsMobile();
+    const isTabletRef = useIsTablet();
 
     const masApi = new MasApi(masHttp, message);
     const mopidyApi = new MopidyApi(new JsonRpcApi(mopidyHttp), message);
 
     const pageNumber = ref(1);
-    const pageSize = isMobileRef.value ? 20 : 50;
+    const pageSize = isMobileRef.value || isTabletRef.value ? 20 : 50;
     const buttonIconSize = 34;
 
     const columns = computed(() => {
@@ -268,10 +269,10 @@ export default defineComponent({
         key: "album",
         sorter: false,
       };
-      if (isMobileRef.value) {
-        titleCol.width = 270;
-        artistCol.width = 240;
-        albumCol.width = 250;
+      if (isMobileRef.value || isTabletRef.value) {
+        titleCol.width = 300;
+        artistCol.width = 250;
+        albumCol.width = 260;
       }
 
       const cols: DataTableColumn[] = [
@@ -624,7 +625,7 @@ export default defineComponent({
         positiveText: "Confirm",
         onPositiveClick: async () => {
           startDialogLoading(d);
-          const result = await masApi.submitDelete(play.playId);
+          const result = await masApi.deletePlay(play.playId);
           requestSubmitting.value = false;
           if (result === true) {
             nextTick(() => loadPlays());

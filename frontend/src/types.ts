@@ -37,6 +37,14 @@ export interface EditablePlay {
   updateAllUnsubmitted: boolean;
 }
 
+export interface EditableCorrection {
+  readonly trackUri: string;
+  title: string;
+  artist: string;
+  album: string;
+  updateAllUnsubmitted: boolean;
+}
+
 export type SelectedTheme = "os-theme" | "light" | "dark";
 export type ActualTheme = "light" | "dark";
 

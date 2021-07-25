@@ -80,7 +80,7 @@ class CorrectionSchema(Schema):
     track_uri = field_str()
     title = field_str()
     artist = field_str()
-    album = field_str()
+    album = field_str(validate=None)
 
 
 class CorrectionEditSchema(Schema):
@@ -90,7 +90,7 @@ class CorrectionEditSchema(Schema):
     track_uri = field_str()
     title = field_str()
     artist = field_str()
-    album = field_str()
+    album = field_str(validate=None)
     update_all_unsubmitted = fields.Bool(required=True)
 
 
