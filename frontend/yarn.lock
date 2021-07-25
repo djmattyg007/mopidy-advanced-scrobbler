@@ -9049,11 +9049,6 @@ vue-cookie-next@^1.3.0:
   resolved "https://registry.yarnpkg.com/vue-cookie-next/-/vue-cookie-next-1.3.0.tgz#2d7aadf55c2c6a25d02a3d27d8161c3f731a6e15"
   integrity sha512-+EinbhSf0c0M8cijCXRVgcvYBIm0lmu3/WKeFUokU93R1J3DxkkBHn5wOc9IyJj9ugAPI0d9EnhcOiOFNA/YVQ==
 
-vue-demi@^0.6.0:
-  version "0.6.2"
-  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.6.2.tgz#ed9633eaa69b7409cc6e8328e8a6c3d31ab39319"
-  integrity sha512-4KfwxbqsZcDz7UryD11oHa6FLK9Gzx4MIwAEcP37IbUdXuF6DHg2w9L5Zv5t+FNqsuAjEQ2NnGVIZ3u71y435Q==
-
 vue-eslint-parser@^7.0.0, vue-eslint-parser@^7.9.0:
   version "7.9.0"
   resolved "https://registry.yarnpkg.com/vue-eslint-parser/-/vue-eslint-parser-7.9.0.tgz#5eeedc71f22ebc7b18b957d1ab171acf29a41e64"
@@ -9091,13 +9086,6 @@ vue-loader@^15.9.2:
     loader-utils "^1.1.0"
     vue-hot-reload-api "^2.3.0"
     vue-style-loader "^4.1.0"
-
-vue-promised@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/vue-promised/-/vue-promised-2.0.3.tgz#57e7543d1a51994787f21e0d5373c68b0a347d60"
-  integrity sha512-VeSWIHSMAxw3jJ94SAPZqcGnTaDBfAk/xdsHdWQ8a0I/xJdjkEXR94Ne8sMxgbQudt/ZPnXPAy7ws4XDjwWcxw==
-  dependencies:
-    vue-demi "^0.6.0"
 
 vue-router@^4.0.10:
   version "4.0.10"
