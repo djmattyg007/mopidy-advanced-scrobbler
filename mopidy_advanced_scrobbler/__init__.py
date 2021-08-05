@@ -72,7 +72,6 @@ class Extension(ext.Extension):
             (r"/css/(.*)", StaticFileHandler, {"path": str(path_static / "css")}),
             (r"/fonts/(.*)", StaticFileHandler, {"path": str(path_static / "fonts")}),
             (r"/js/(.*)", StaticFileHandler, {"path": str(path_static / "js")}),
-
             (r"/api/plays/load", ApiPlayLoad, api_args),
             (r"/api/plays/edit", ApiPlayEdit, api_args),
             (r"/api/plays/delete", ApiPlayDelete, api_args),
@@ -89,7 +88,6 @@ class Extension(ext.Extension):
                 OverrideStaticFileHandler,
                 {"static_file_path": path_static / "favicon.png"},
             ),
-
             (r"/(plays|corrections)", OverrideStaticFileHandler, vue_router_args),
             (r"/", OverrideStaticFileHandler, vue_router_args),
         ]

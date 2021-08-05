@@ -20,12 +20,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - name: "Set up Python ${{ matrix.python }}"
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      - name: Fix home dir permissions to enable pip caching
+      - name: "Fix home dir permissions to enable pip caching"
         run: chown -R root /github/home
-      - name: Cache pip
+      - name: "Cache dependencies"
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
@@ -43,7 +44,8 @@ jobs:
         continue-on-error: true
       - name: "Run tests"
         run: "python -m invoke test"
-      - uses: codecov/codecov-action@v2
+      - name: "Upload coverage data to Codecov"
+        uses: codecov/codecov-action@v2
         if: ${{ matrix.coverage }}
 
   frontend:
