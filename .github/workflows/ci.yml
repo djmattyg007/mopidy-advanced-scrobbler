@@ -38,12 +38,12 @@ jobs:
         run: "python -m pip install .[dev]"
       - name: "Run linting"
         run: "python -m invoke lint"
-      # Not ready yet
-      #- name: Run type checking
-      #  run: python -m invoke type-check
+      - name: "Run type checking"
+        run: "python -m invoke type-check"
+        continue-on-error: true
       - name: "Run tests"
-        run: python -m invoke test
-      - uses: codecov/codecov-action@v1
+        run: "python -m invoke test"
+      - uses: codecov/codecov-action@v2
         if: ${{ matrix.coverage }}
 
   frontend:
