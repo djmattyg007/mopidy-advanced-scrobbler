@@ -334,7 +334,7 @@ export default defineComponent({
           title: "Submitted",
           key: "submittedAt",
           sorter: false,
-          width: 100,
+          width: 110,
           align: "center",
           render(row) {
             const play = row as unknown as Play;
