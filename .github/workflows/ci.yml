@@ -10,13 +10,21 @@ jobs:
         include:
           - name: "Python 3.8"
             python: "3.8"
+            experimental: false
+            coverage: false
           - name: "Python 3.9"
             python: "3.9"
+            experimental: false
             coverage: true
+          - name: "Python 3.10"
+            python: "3.10.0-rc.1"
+            experimental: true
+            coverage: false
 
     name: ${{ matrix.name }}
     runs-on: "ubuntu-20.04"
     container: "ghcr.io/mopidy/ci:latest"
+    continue-on-error: ${{ matrix.experimental }}
 
     steps:
       - uses: actions/checkout@v2
