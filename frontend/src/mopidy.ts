@@ -38,8 +38,8 @@ const getMopidyState = async (): Promise<void> => {
   try {
     playbackData = await masApi.loadPlaybackData();
   } catch (err) {
-    console.error(err);
     if (failureCount < 5) {
+      console.error(err);
       mopidyState.online = MopidyConnectionState.RECONNECTING;
       failureCount += 1;
     } else {
