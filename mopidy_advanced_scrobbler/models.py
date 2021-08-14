@@ -1,4 +1,5 @@
 import dataclasses
+import math
 from enum import IntEnum
 from typing import Mapping, Optional, Tuple
 from urllib.parse import urlparse
@@ -110,7 +111,7 @@ def prepare_play(track: Track, played_at: int, correction: Optional[Correction])
         data["musicbrainz_id"] = None
 
     if track.length:
-        data["duration"] = track.length // 1000
+        data["duration"] = math.ceil(track.length / 1000)
     else:
         data["duration"] = 0
 
