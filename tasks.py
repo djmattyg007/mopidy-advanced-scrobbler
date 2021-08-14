@@ -1,31 +1,42 @@
 import os
+import sys
 
-from invoke import task
+from invoke import task, util
+
+
+in_ci = os.environ.get("CI", "false") == "true"
+if in_ci:
+    pty = False
+else:
+    pty = util.isatty(sys.stdout) and util.isatty(sys.stderr)
 
 
 @task
 def reformat(c):
-    c.run("isort mopidy_advanced_scrobbler tests setup.py tasks.py")
-    c.run("black mopidy_advanced_scrobbler tests setup.py tasks.py")
+    c.run("isort mopidy_advanced_scrobbler tests setup.py tasks.py", pty=pty)
+    c.run("black mopidy_advanced_scrobbler tests setup.py tasks.py", pty=pty)
 
 
 @task
 def lint(c):
-    c.run("flake8 --show-source --statistics --max-line-length 100 mopidy_advanced_scrobbler tests")
-    c.run("check-manifest")
+    c.run("flake8 --show-source --statistics --max-line-length 100 mopidy_advanced_scrobbler tests", pty=pty)
+    c.run("check-manifest", pty=pty)
 
 
 @task
-def test(c):
-    args = ["pytest", "--cov=mopidy_advanced_scrobbler", "--cov-branch", "--cov-report=term"]
-    if os.environ.get("CI", "false") == "true":
-        args.append("--cov-report=xml")
+def test(c, onefile=""):
+    pytest_args = ["pytest", "--strict-config", "--cov=mopidy_advanced_scrobbler", "--cov-report=term"]
+    if in_ci:
+        pytest_args.extend(("--cov-report=xml", "--strict-markers"))
     else:
-        args.append("--cov-report=html")
+        pytest_args.append("--cov-report=html")
 
-    c.run(" ".join(args))
+    if onefile:
+        pytest_args.append(onefile)
+
+    c.run(" ".join(pytest_args), pty=pty)
 
 
 @task
 def type_check(c):
-    c.run("mypy mopidy_advanced_scrobbler tests")
+    c.run("mypy mopidy_advanced_scrobbler tests", pty=pty)
