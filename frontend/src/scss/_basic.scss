@@ -48,3 +48,11 @@ dd {
     }
   }
 }
+
+.n-button-group.button-group-fill:not(.n-button-group--vertical) {
+  width: 100%;
+
+  .n-button {
+    flex-grow: 1;
+  }
+}

@@ -8,8 +8,10 @@ import tornado.escape
 import tornado.httputil
 import tornado.web
 from mopidy.http.handlers import StaticFileHandler, check_origin, set_mopidy_headers
+from mopidy.models import Track
 
 from mopidy_advanced_scrobbler.db import DbClientError, SortDirectionEnum, db_service
+from mopidy_advanced_scrobbler.models import prepare_play
 from mopidy_advanced_scrobbler.network import NetworkException, network_service
 from mopidy_advanced_scrobbler.serial import (
     CorrectionEditSchema,
@@ -27,6 +29,7 @@ if TYPE_CHECKING:
     from typing import Type
 
     from marshmallow import Schema, fields
+    from mopidy.core.actor import Core
 
 
 logger = logging.getLogger(__name__)
@@ -124,6 +127,64 @@ class _BaseJsonPostHandler(_BaseJsonHandler):
 
     def _post(self, data):
         raise NotImplementedError()
+
+
+class ApiPlaybackData(_BaseJsonHandler):
+    def initialize(self, core: Core, **kwargs):
+        super().initialize(**kwargs)
+        self.core: Core = core
+
+    def get(self):
+        self.set_extra_headers()
+
+        track_future = self.core.playback.get_current_track()
+        playback_state_future = self.core.playback.get_state()
+        playback_time_pos_future = self.core.playback.get_time_position()
+
+        track: Track = track_future.get()
+        if track:
+            try:
+                db = db_service.retrieve_service().get(timeout=10)
+                correction = db.find_correction(track.uri).get(timeout=10)
+            except Exception as exc:
+                logger.exception(
+                    f"Error while finding scrobbler correction for track with URI '{track.uri}': {exc}"
+                )
+                correction = None
+
+            play = prepare_play(track, -1, correction)
+            playing = {
+                "trackUri": play.track_uri,
+                "title": play.title,
+                "artist": play.artist,
+                "album": play.album,
+                "duration": play.duration,
+            }
+        else:
+            playing = {
+                "trackUri": "",
+                "title": "",
+                "artist": "",
+                "album": "",
+                "duration": 0,
+            }
+
+        playback_state: str = playback_state_future.get()
+        playback_time_pos_msec: Optional[int] = playback_time_pos_future.get()
+        if playback_time_pos_msec:
+            playback_time_pos = int(playback_time_pos_msec / 1000)
+        else:
+            playback_time_pos = 0
+
+        response = {
+            "success": True,
+            "playback": {
+                "state": playback_state,
+                "position": playback_time_pos,
+            },
+            "playing": playing,
+        }
+        self.write(response)
 
 
 class ApiPlayLoad(_BaseJsonHandler):

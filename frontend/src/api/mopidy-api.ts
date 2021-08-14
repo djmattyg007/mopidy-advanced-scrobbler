@@ -64,6 +64,66 @@ export class MopidyApi {
     this.notifier.error(String(err));
   }
 
+  public async previous(): Promise<boolean> {
+    try {
+      await this.jsonrpc.request("core.playback.previous");
+    } catch (err) {
+      this.handleError(err);
+      return false;
+    }
+
+    this.notifier.success("Success.");
+    return true;
+  }
+
+  public async next(): Promise<boolean> {
+    try {
+      await this.jsonrpc.request("core.playback.next");
+    } catch (err) {
+      this.handleError(err);
+      return false;
+    }
+
+    this.notifier.success("Success.");
+    return true;
+  }
+
+  public async pause(): Promise<boolean> {
+    try {
+      await this.jsonrpc.request("core.playback.pause");
+    } catch (err) {
+      this.handleError(err);
+      return false;
+    }
+
+    this.notifier.success("Success.");
+    return true;
+  }
+
+  public async play(): Promise<boolean> {
+    try {
+      await this.jsonrpc.request("core.playback.play");
+    } catch (err) {
+      this.handleError(err);
+      return false;
+    }
+
+    this.notifier.success("Success.");
+    return true;
+  }
+
+  public async stop(): Promise<boolean> {
+    try {
+      await this.jsonrpc.request("core.playback.stop");
+    } catch (err) {
+      this.handleError(err);
+      return false;
+    }
+
+    this.notifier.success("Success.");
+    return true;
+  }
+
   public async playNext(uris: ReadonlyArray<string>): Promise<boolean> {
     let index: number;
     try {

@@ -15,3 +15,14 @@ export function useIsTablet() {
     return breakpointRef.value === "s";
   });
 }
+
+export function formatTime(time: number): string {
+  const sign = time < 0 ? "-" : "";
+  time = Math.abs(time);
+
+  const minutes = Math.floor(time / 60);
+  const seconds = time % 60;
+  const secondsStr = seconds < 10 ? `0${seconds}` : String(seconds);
+
+  return `${sign}${minutes}:${secondsStr}`;
+}

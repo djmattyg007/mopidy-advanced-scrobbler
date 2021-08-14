@@ -4,6 +4,17 @@
       <n-layout-header bordered class="nav" :style="headerStyle">
         <n-text class="app-title">Advanced Scrobbler</n-text>
         <n-space class="mas-spacer" justify="end">
+          <n-popover trigger="click" placement="bottom-end" :style="nowPlayingPopoverStyle">
+            <template #trigger>
+              <n-button style="--height: 90%">
+                <template #icon>
+                  <music-icon />
+                </template>
+              </n-button>
+            </template>
+
+            <now-playing-panel :style="nowPlayingPanelStyle" />
+          </n-popover>
           <n-dropdown trigger="click" :options="themeDropdownOptions" @select="handleThemeSelect">
             <n-button style="--height: 90%">
               <template v-if="selectedTheme === 'os-theme'" #icon>
@@ -39,14 +50,18 @@ import {
   NLayout,
   NLayoutContent,
   NLayoutHeader,
+  NPopover,
   NSpace,
   NText,
 } from "naive-ui";
 
+import { mopidyState, MopidyConnectionState } from "@/mopidy";
 import { useIsMobile } from "@/utils";
 
 import AppToolbar from "@/components/AppToolbar.vue";
+import NowPlayingPanel from "@/components/NowPlayingPanel.vue";
 
+import MusicIcon from "@/icons/MusicIcon.vue";
 import ThemeAutoIcon from "@/icons/ThemeAutoIcon.vue";
 import ThemeDarkIcon from "@/icons/ThemeDarkIcon.vue";
 import ThemeLightIcon from "@/icons/ThemeLightIcon.vue";
@@ -57,11 +72,14 @@ export default defineComponent({
   name: "App",
   components: {
     AppToolbar,
+    MusicIcon,
+    NowPlayingPanel,
     NButton,
     NDropdown,
     NLayout,
     NLayoutContent,
     NLayoutHeader,
+    NPopover,
     NSpace,
     NText,
     ThemeAutoIcon,
@@ -123,6 +141,28 @@ export default defineComponent({
       return classes;
     });
 
+    const nowPlayingPopoverStyle = computed(() => {
+      let borderColor: string;
+      switch (mopidyState.online) {
+        case MopidyConnectionState.OFFLINE:
+          borderColor = "#ff3d00";
+          break;
+        case MopidyConnectionState.RECONNECTING:
+          borderColor = "#ffc107";
+          break;
+        default:
+          borderColor = "transparent";
+          break;
+      }
+
+      return { border: `2px solid ${borderColor}` };
+    });
+    const nowPlayingPanelStyle = computed(() => {
+      return {
+        "max-width": isMobileRef.value ? "260px" : "320px",
+      };
+    });
+
     return {
       headerStyle: paddingStyle,
       contentWrapStyle: paddingStyle,
@@ -130,6 +170,8 @@ export default defineComponent({
       themeDropdownOptions,
       handleThemeSelect,
       rootContainerClass,
+      nowPlayingPopoverStyle,
+      nowPlayingPanelStyle,
     };
   },
 });

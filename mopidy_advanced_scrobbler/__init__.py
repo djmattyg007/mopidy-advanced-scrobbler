@@ -53,6 +53,7 @@ class Extension(ext.Extension):
             ApiPlayScrobbleMany,
             ApiPlaySubmit,
             ApiScrobble,
+            ApiPlaybackData,
             OverrideStaticFileHandler,
             StaticFileHandler,
         )
@@ -83,6 +84,7 @@ class Extension(ext.Extension):
             (r"/api/corrections/delete", ApiCorrectionDelete, api_args),
             (r"/api/approve-auto", ApiApproveAutoCorrection, api_args),
             (r"/api/scrobble", ApiScrobble, api_args),
+            (r"/api/playback-data", ApiPlaybackData, {**api_args, "core": core}),
             (
                 r"/favicon\.png$",
                 OverrideStaticFileHandler,

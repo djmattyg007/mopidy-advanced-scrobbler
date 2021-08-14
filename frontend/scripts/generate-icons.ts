@@ -11,13 +11,18 @@ const mdi = "node_modules/@mdi/svg/svg";
 
 const svgPaths: [string, string][] = [
   ["delete", `${mdi}/delete-forever.svg`],
+  ["music", `${mdi}/music.svg`],
   ["edit", `${mdi}/pencil.svg`],
+  ["pause", `${mdi}/pause.svg`],
+  ["play", `${mdi}/play.svg`],
   ["refresh", `${mdi}/refresh.svg`],
   ["scrobble", `${mdi}/upload.svg`],
   ["scrobble-all", `${mdi}/auto-upload.svg`],
   ["skip-backward", `${mdi}/skip-backward.svg`],
+  ["skip-forward", `${mdi}/skip-forward.svg`],
   ["step-backward", `${mdi}/step-backward.svg`],
   ["step-forward", `${mdi}/step-forward.svg`],
+  ["stop", `${mdi}/stop.svg`],
   ["theme-auto", `${mdi}/brightness-auto.svg`],
   ["theme-dark", `${mdi}/brightness-2.svg`],
   ["theme-light", `${mdi}/brightness-5.svg`],
