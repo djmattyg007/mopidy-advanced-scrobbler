@@ -3,3 +3,4 @@ TODO: add filtering (and maybe sorting) capabilities to corrections table
 TODO: add Last.fm track/artist/album links to web interface
 TODO: maybe add "now playing" display to web interface
 TODO: update "submitted" display to be more comprehensive. requires backend changes to allow marking a play as ignored rather than just deleting. change submitted column to a "status" column.
+TODO: load loved tracks from last.fm in a playlist. reload tracks on a timer I guess?
