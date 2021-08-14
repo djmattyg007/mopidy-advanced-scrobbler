@@ -3,7 +3,7 @@ import mopidy.config.validators as validators
 
 
 class Float(types.ConfigValue):
-    """Integer value."""
+    """Float value."""
 
     def __init__(self, minimum=None, maximum=None, choices=None, optional=False):
         self._required = not optional
