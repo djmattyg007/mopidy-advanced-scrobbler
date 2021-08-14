@@ -29,7 +29,7 @@ const dummyNotifier = {
   success: () => {},
   error: () => {},
   /* eslint-enable @typescript-eslint/no-empty-function */
-}
+};
 const masApi = new MasApi(masHttp, dummyNotifier);
 
 let failureCount = 0;

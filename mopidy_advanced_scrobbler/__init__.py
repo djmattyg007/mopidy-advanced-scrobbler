@@ -46,6 +46,7 @@ class Extension(ext.Extension):
             ApiCorrectionDelete,
             ApiCorrectionEdit,
             ApiCorrectionLoad,
+            ApiPlaybackData,
             ApiPlayDelete,
             ApiPlayDeleteMany,
             ApiPlayEdit,
@@ -53,7 +54,6 @@ class Extension(ext.Extension):
             ApiPlayScrobbleMany,
             ApiPlaySubmit,
             ApiScrobble,
-            ApiPlaybackData,
             OverrideStaticFileHandler,
             StaticFileHandler,
         )

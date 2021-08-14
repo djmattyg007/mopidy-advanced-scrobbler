@@ -118,10 +118,10 @@ export default defineComponent({
     };
     const play = () => {
       mopidyApi.play();
-    }
+    };
     const stop = () => {
       mopidyApi.stop();
-    }
+    };
 
     return {
       mopidyState,

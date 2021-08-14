@@ -21,14 +21,14 @@ export interface PlaybackDataResponse {
   readonly playback: {
     readonly state: "playing" | "paused" | "stopped";
     readonly position: number; // seconds
-  },
+  };
   readonly playing: {
     readonly trackUri: string;
     readonly title: string;
     readonly artist: string;
     readonly album: string;
     readonly duration: number; // seconds
-  },
+  };
 }
 
 export interface LoadCorrectionsResponse {
