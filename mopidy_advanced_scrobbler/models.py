@@ -5,13 +5,16 @@ from urllib.parse import urlparse
 
 from mopidy.models import Track
 from music_metadata_filter.filter import MetadataFilter
-from music_metadata_filter.filters import make_remastered_filter
+from music_metadata_filter.filters import make_remastered_filter, make_youtube_filter
 from music_metadata_filter.opinionated_filters import make_spotify_filter
 
 
+_youtube_filter = make_youtube_filter()
 metadata_filters_mapping: Mapping[str, MetadataFilter] = {
     "spotify": make_spotify_filter(),
     "local": make_remastered_filter(),
+    "yt": _youtube_filter,
+    "youtube": _youtube_filter,
 }
 
 
