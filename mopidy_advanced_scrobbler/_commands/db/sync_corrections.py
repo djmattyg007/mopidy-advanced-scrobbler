@@ -8,13 +8,19 @@ import questionary
 from prompt_toolkit.completion import FuzzyWordCompleter
 from rich.table import Table, box
 
-from mopidy_advanced_scrobbler.db import Connection
 from mopidy_advanced_scrobbler._commands import AbortCommand, Counter
-from mopidy_advanced_scrobbler._commands.output import stdout, stderr
-from mopidy_advanced_scrobbler._commands.db import connect_internal_db, verify_external_db, attach_external_db
+from mopidy_advanced_scrobbler._commands.db import (
+    attach_external_db,
+    connect_internal_db,
+    verify_external_db,
+)
+from mopidy_advanced_scrobbler._commands.output import stderr, stdout
+
 
 if TYPE_CHECKING:
     from argparse import Namespace
+
+    from mopidy_advanced_scrobbler.db import Connection
 
 
 load_both_differ_query = """
@@ -117,15 +123,25 @@ def run(args: Namespace, config):
     return 0
 
 
-def sync_both_differ(db: Connection, counter: Counter[DataMismatchCounterEnum], *, include_filesystem_uris: bool = False):
-    stdout.print("Synchronising differences between existing entries in both databases.", style="notice")
+def sync_both_differ(
+    db: Connection,
+    counter: Counter[DataMismatchCounterEnum],
+    *,
+    include_filesystem_uris: bool = False,
+):
+    stdout.print(
+        "Synchronising differences between existing entries in both databases.", style="notice"
+    )
 
     results = db.execute(load_both_differ_query)
     for result in results:
         track_uri = result["track_uri"]
         parsed_track_uri = urlparse(track_uri)
         if not parsed_track_uri.scheme:
-            stderr.print(f"Invalid track URI found in internal corrections database: {track_uri}", style="warning")
+            stderr.print(
+                f"Invalid track URI found in internal corrections database: {track_uri}",
+                style="warning",
+            )
             continue
         elif parsed_track_uri.scheme in ("file", "local"):
             if not include_filesystem_uris:

@@ -8,6 +8,7 @@ from mopidy import config, ext
 
 from ._config import Float as ConfigFloat
 
+
 if TYPE_CHECKING:
     from mopidy.commands import Command
 

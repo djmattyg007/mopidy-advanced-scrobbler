@@ -19,13 +19,21 @@ def reformat(c):
 
 @task
 def lint(c):
-    c.run("flake8 --show-source --statistics --max-line-length 100 mopidy_advanced_scrobbler tests", pty=pty)
+    c.run(
+        "flake8 --show-source --statistics --max-line-length 100 mopidy_advanced_scrobbler tests",
+        pty=pty,
+    )
     c.run("check-manifest", pty=pty)
 
 
 @task
 def test(c, onefile=""):
-    pytest_args = ["pytest", "--strict-config", "--cov=mopidy_advanced_scrobbler", "--cov-report=term"]
+    pytest_args = [
+        "pytest",
+        "--strict-config",
+        "--cov=mopidy_advanced_scrobbler",
+        "--cov-report=term",
+    ]
     if in_ci:
         pytest_args.extend(("--cov-report=xml", "--strict-markers"))
     else:

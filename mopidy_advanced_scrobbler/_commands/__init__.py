@@ -1,5 +1,6 @@
 from collections import Counter as _Counter
-from typing import Counter as CounterType, Generic, TypeVar
+from typing import Counter as CounterType
+from typing import Generic, TypeVar
 
 
 class AbortCommand(Exception):

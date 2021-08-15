@@ -5,8 +5,21 @@ from typing import TYPE_CHECKING
 
 from mopidy import commands
 
+
 if TYPE_CHECKING:
     from argparse import Namespace
+
+
+def _pre_import_deps() -> None:
+    """Pre-import dependencies to immediately highlight missing dependencies."""
+    try:
+        import readline  # noqa
+    except ImportError:
+        pass
+
+    import prompt_toolkit  # noqa
+    import questionary  # noqa
+    import rich  # noqa
 
 
 class AdvancedScrobblerCommand(commands.Command):
@@ -42,14 +55,7 @@ class DbSyncCorrectionsCommand(commands.Command):
     def run(self, args: Namespace, config):
         from ._commands import AbortCommand
 
-        try:
-            import readline
-        except ImportError:
-            pass
-
-        import prompt_toolkit  # noqa
-        import rich  # noqa
-        import questionary  # noqa
+        _pre_import_deps()
 
         from ._commands.db.sync_corrections import run
 
@@ -62,7 +68,3 @@ class DbSyncCorrectionsCommand(commands.Command):
             exit_code = 0
 
         return exit_code
-
-
-
-

@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from mopidy_advanced_scrobbler.db import SCHEMA_VERSION, Connection, get_db_path, sqlite3
 from mopidy_advanced_scrobbler._commands import AbortCommand
-from mopidy_advanced_scrobbler._commands.output import stdout, stderr
+from mopidy_advanced_scrobbler._commands.output import stderr, stdout
+from mopidy_advanced_scrobbler.db import SCHEMA_VERSION, Connection, get_db_path, sqlite3
 
 
 def connect_internal_db(config) -> Connection:
@@ -20,7 +20,10 @@ def connect_internal_db(config) -> Connection:
 
     internal_user_version = db.execute("PRAGMA user_version").fetchone()["user_version"]
     if internal_user_version != SCHEMA_VERSION:
-        stderr.print(f"Internal database schema is out of date. Latest version is v{SCHEMA_VERSION}.", style="error")
+        stderr.print(
+            f"Internal database schema is out of date. Latest version is v{SCHEMA_VERSION}.",
+            style="error",
+        )
         raise AbortCommand
 
     stdout.print("Connected to internal database.", style="info")
@@ -41,7 +44,10 @@ def _connect_external_db(db_path: Path, config) -> Connection:
 
     external_user_version = db.execute("PRAGMA user_version").fetchone()["user_version"]
     if external_user_version != SCHEMA_VERSION:
-        stderr.print(f"External database schema is out of date. Latest version is v{SCHEMA_VERSION}.", style="error")
+        stderr.print(
+            f"External database schema is out of date. Latest version is v{SCHEMA_VERSION}.",
+            style="error",
+        )
         db.close()
         raise AbortCommand
 
@@ -60,7 +66,7 @@ def verify_external_db(db_path: Path, config):
 
 
 def attach_external_db(db: Connection, db_path: Path):
-    db.execute(f"ATTACH DATABASE ? as ext", (str(db_path),))
+    db.execute("ATTACH DATABASE ? as ext", (str(db_path),))
     stdout.print("Connected to external database.", style="info")
 
 
