@@ -154,7 +154,6 @@ class AdvancedScrobblerFrontend(pykka.ThreadingActor, CoreListener):
             track.uri,
         )
 
-        db = None
         db_restart_future = None
 
         try:

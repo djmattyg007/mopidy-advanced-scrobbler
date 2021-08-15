@@ -13,7 +13,7 @@ from ._service import Service
 
 
 if TYPE_CHECKING:
-    from typing import Collection, List, Optional
+    from typing import Collection, List, Optional, Sequence
 
 from mopidy_advanced_scrobbler import Extension
 from mopidy_advanced_scrobbler.serial import (
@@ -149,7 +149,7 @@ class AdvancedScrobblerDb(pykka.ThreadingActor):
 
     def find_plays(
         self,
-        play_ids: Collection[int],
+        play_ids: Sequence[int],
         *,
         only_unsubmitted: bool = False,
     ) -> Collection[RecordedPlay]:

@@ -56,7 +56,7 @@ recorded_play_schema = make_camelcase_schema(RecordedPlaySchema)()
 
 
 class OverrideStaticFileHandler(StaticFileHandler):
-    def initialize(self, static_file_path: Path):
+    def initialize(self, static_file_path: Path):  # type: ignore
         self.static_file_path = str(static_file_path)
         super().initialize(str(static_file_path.parent))
 

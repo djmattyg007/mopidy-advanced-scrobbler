@@ -12,7 +12,7 @@ def connect_internal_db(config) -> Connection:
         raise AbortCommand
 
     stdout.print("Connecting to internal database.", style="notice")
-    db = sqlite3.connect(
+    db: Connection = sqlite3.connect(
         db_path,
         timeout=config["advanced_scrobbler"]["db_timeout"],
         factory=Connection,
@@ -36,7 +36,7 @@ def _connect_external_db(db_path: Path, config) -> Connection:
         raise AbortCommand
 
     stdout.print("Connecting to external database.", style="notice")
-    db = sqlite3.connect(
+    db: Connection = sqlite3.connect(
         db_path,
         timeout=config["advanced_scrobbler"]["db_timeout"],
         factory=Connection,

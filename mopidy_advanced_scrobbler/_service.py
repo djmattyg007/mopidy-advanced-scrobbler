@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 import pykka
 
@@ -14,9 +14,12 @@ if TYPE_CHECKING:
 ActorRetrievalFailure = (pykka.ActorDeadError, pykka.Timeout)
 
 
-class Service(object):
-    def __init__(self, actor_class: Type[pykka.Actor]):
-        self.actor_class: Type[pykka.Actor] = actor_class
+ActorTypeVar = TypeVar("ActorTypeVar", bound=pykka.Actor)
+
+
+class Service(Generic[ActorTypeVar]):
+    def __init__(self, actor_class: Type[ActorTypeVar]):
+        self.actor_class: Type[ActorTypeVar] = actor_class
         self._instance: Optional[pykka.ActorProxy] = None
         self._instance_dead = False
         self._instance_urn = None
@@ -49,7 +52,7 @@ class Service(object):
         future.set_get_hook(waiter)
         return future
 
-    def retrieve_service(self) -> pykka.Future:
+    def retrieve_service(self) -> pykka.Future[ActorTypeVar]:
         future = self.actor_class._create_future()
 
         if self._instance:
