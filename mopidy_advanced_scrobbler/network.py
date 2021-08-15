@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Optional, TypedDict, cast, type_check_only
+from typing import Iterable, Optional, TypedDict, cast
 
 import pykka
 import pylast
@@ -26,8 +26,7 @@ class NowPlayingData(TypedDict):
     duration: Optional[int]
 
 
-@type_check_only
-class PartialNowPlayingData(TypedDict, total=False):
+class _PartialNowPlayingData(TypedDict, total=False):
     artist: str
     title: str
     album: Optional[str]
@@ -40,7 +39,7 @@ class PlayData(NowPlayingData):
 
 
 def format_now_playing_data(play: Play) -> NowPlayingData:
-    data: PartialNowPlayingData = {
+    data: _PartialNowPlayingData = {
         "artist": play.artist,
         "title": play.title,
     }
