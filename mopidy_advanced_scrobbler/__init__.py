@@ -1,9 +1,15 @@
+from __future__ import annotations
+
 import pathlib
+from typing import TYPE_CHECKING
 
 import pkg_resources
 from mopidy import config, ext
 
 from ._config import Float as ConfigFloat
+
+if TYPE_CHECKING:
+    from mopidy.commands import Command
 
 
 __version__ = pkg_resources.get_distribution("Mopidy-Advanced-Scrobbler").version
@@ -39,6 +45,11 @@ class Extension(ext.Extension):
         registry.add("frontend", AdvancedScrobblerFrontend)
 
         registry.add("http:app", {"name": self.ext_name, "factory": self.factory_webapp})
+
+    def get_command(self) -> Command:
+        from .commands import AdvancedScrobblerCommand
+
+        return AdvancedScrobblerCommand()
 
     def factory_webapp(self, config, core):
         from .web import (

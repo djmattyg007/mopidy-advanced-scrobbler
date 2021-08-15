@@ -30,6 +30,8 @@ from mopidy_advanced_scrobbler.serial import (
 
 logger = logging.getLogger(__name__)
 
+SCHEMA_VERSION = 1
+
 
 def time() -> int:
     return int(_time())
@@ -58,6 +60,10 @@ def log_query(query: str):
     logger.debug("Executing DB query: %s", query)
 
 
+def get_db_path(config) -> Path:
+    return Extension.get_data_dir(config) / "advanced_scrobbler.db"
+
+
 class Connection(sqlite3.Connection):
     def __init__(self, *args, **kwargs):
         kwargs["isolation_level"] = None
@@ -68,12 +74,12 @@ class Connection(sqlite3.Connection):
 
 
 class AdvancedScrobblerDb(pykka.ThreadingActor):
-    schema_version = 1
+    schema_version = SCHEMA_VERSION
 
     def __init__(self, config):
         super().__init__()
 
-        self._dbpath = Extension.get_data_dir(config) / "advanced_scrobbler.db"
+        self._dbpath = get_db_path(config)
         self._timeout = config["advanced_scrobbler"]["db_timeout"]
 
         self._sqlpath = Path(__file__).parent / "sql"
