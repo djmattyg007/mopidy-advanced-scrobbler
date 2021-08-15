@@ -60,6 +60,12 @@ const getMopidyState = async (): Promise<void> => {
   mopidyState.playing.album = playbackData.playing.album;
   mopidyState.playing.duration = playbackData.playing.duration;
 
-  setTimeout(getMopidyState, 500);
+  if (playbackData.playback.state === "stopped") {
+    setTimeout(getMopidyState, 1500);
+  } else if (playbackData.playback.state === "paused") {
+    setTimeout(getMopidyState, 750);
+  } else {
+    setTimeout(getMopidyState, 500);
+  }
 };
 setTimeout(getMopidyState, 2000);
