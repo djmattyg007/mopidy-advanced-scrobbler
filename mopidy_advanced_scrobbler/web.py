@@ -104,7 +104,7 @@ class _BaseJsonHandler(_BaseHandler):
     def set_extra_headers(self):
         super().set_extra_headers()
         self.set_header("Accept", "application/json")
-        self.set_header("Content-Type", "application/json; utf-8")
+        self.set_header("Content-Type", "application/json; charset=utf-8")
 
     def compute_etag(self):
         return None
