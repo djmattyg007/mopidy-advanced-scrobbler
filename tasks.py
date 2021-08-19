@@ -32,7 +32,7 @@ def test(c, onefile=""):
         "pytest",
         "--strict-config",
         "--cov=mopidy_advanced_scrobbler",
-        "--cov-report=term",
+        "--cov-report=term-missing",
     ]
     if in_ci:
         pytest_args.extend(("--cov-report=xml", "--strict-markers"))
