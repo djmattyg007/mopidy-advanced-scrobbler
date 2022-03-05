@@ -8,24 +8,27 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
         with:
-          node-version: "14"
+          node-version: "16"
       - name: "Install frontend dependencies"
         run: yarn install
         working-directory: "./frontend"
       - name: "Prepare compiled frontend code"
         run: "scripts/build-static.sh"
-      - uses: actions/setup-python@v2
+
+      - uses: actions/setup-python@v3
         with:
           python-version: "3.9"
       - name: "Install 'build' package"
         run: "python3 -m pip install build"
       - name: "Build package"
         run: "python3 -m build"
+
       - name: "Publish package"
-        uses: pypa/gh-action-pypi-publish@v1.4.2
+        uses: pypa/gh-action-pypi-publish@v1.5.0
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
